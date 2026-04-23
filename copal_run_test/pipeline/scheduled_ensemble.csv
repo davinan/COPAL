@@ -1,0 +1,3 @@
+target_name,protein_name,ligand_name,batch_id,is_done_af3,is_done_boltz2,is_done_rf3
+Pse_001_3var_AHL01,Pse_001_3var,AHL01,0,False,False,False
+Pse_001_3var_AHL02,Pse_001_3var,AHL02,0,False,False,False

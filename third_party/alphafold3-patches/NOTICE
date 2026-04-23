@@ -1,0 +1,35 @@
+Provenance of `confidence_types.py`
+====================================
+
+`confidence_types.py` in this directory is a modified copy of:
+
+    src/alphafold3/model/confidence_types.py
+
+from the AlphaFold 3 repository
+(https://github.com/google-deepmind/alphafold3),
+copyright Google DeepMind, distributed under CC-BY-NC-SA 4.0.
+
+Modification
+------------
+
+The `to_json` / `convert` path in `StructureConfidenceSummary` has been
+changed to round confidence scores (ipTM, pTM, chain_pair_iptm, etc.) to
+**7 decimal places** in the emitted JSON, instead of the lower default
+precision in the upstream file. This higher precision is useful for
+ensemble-ranking analyses where small confidence differences matter.
+
+No other behavioural changes have been made.
+
+Why this is shipped here
+------------------------
+
+Because this file contains AlphaFold 3 source code (with modifications),
+it is a derivative work and must be redistributed under the same
+CC-BY-NC-SA 4.0 license — see `LICENSE` in this directory. The rest of the
+COPAL repository is MIT-licensed; only this single file is CC-BY-NC-SA 4.0.
+
+How to use
+----------
+
+See `README.md` in this directory for two install routes (runtime
+injection vs in-place edit of your AlphaFold 3 clone).

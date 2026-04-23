@@ -1,0 +1,42 @@
+refahl_id,cognate_ligand,max_identity_to_any_pdb,closest_pdb,closest_pdb_ligand,reason
+Nitrosp_001,C8,0.2568,3QP1,C6,<40% identity
+Nitrosp_002,C12,0.3074,3QP1,C6,<40% identity
+Acidith_001,3OHC14,0.3827,8B4A,C4,<40% identity
+Mes_001b,C12:2,0.28,2UV0,3OC12,<40% identity
+MethA_001a,"C14:2, 2E 7Z",0.2389,8B4A,C4,<40% identity
+MethA_001c,C14:1,0.2752,2Q0O,3OC8,<40% identity
+MethA_002,C8,0.2601,3QP1,C6,<40% identity
+MethA_004,3OHC8,0.2701,2Q0O,3OC8,<40% identity
+MethA_005,3OC8,0.298,2Q0O,3OC8,<40% identity
+Nitrob_001b,C10:1,0.2857,2UV0,3OC12,<40% identity
+Para_001,C16,0.2311,1L3L,3OC8,<40% identity
+Pha_002,3OC16:1,0.2672,8B4A,C4,<40% identity
+Rhobct_001_R1,"C14:1, 7Z",0.2868,8B4A,C4,<40% identity
+Rhobct_001_R2,"C14:1, 7Z",0.2581,8B4A,C4,<40% identity
+Rhbtales_001,3OHC12:1,0.2634,8B4A,C4,<40% identity
+Rhbtales_002,C8,0.2463,8B4A,C4,<40% identity
+Rps_002,IV,0.2648,3SZT,3OC12,<40% identity
+Rhosp_001,3OHC8,0.2878,2Q0O,3OC8,<40% identity
+Acidvx_001,3OHC10,0.3714,3SZT,3OC12,<40% identity
+Burk_001g,C8,0.3518,8B4A,C4,<40% identity
+Burk_004a,3OHC8,0.2459,3SZT,3OC12,<40% identity
+Burk_005,C10,0.4458,3SZT,3OC12,≥40% but different ligand
+Burk_006a,3OHC14,0.3983,2UV0,3OC12,<40% identity
+Burk_007,3OC10,0.4,2UV0,3OC12,≥40% but different ligand
+Coll_001a,3OHC8,0.3544,3SZT,3OC12,<40% identity
+Coll_001b,3OHC8,0.3544,3SZT,3OC12,<40% identity
+Nitroso_001,3OHC14,0.3532,2UV0,3OC12,<40% identity
+Ral_001,C8,0.3563,4Y15,3OC6,<40% identity
+Aci_001b,3OHC12,0.3347,3SZT,3OC12,<40% identity
+Aer_001c,C4,0.2765,3SZT,3OC12,<40% identity
+Ced_001,C4,0.379,5L09,3OC6,<40% identity
+Citro_001a,C4,0.3918,5L09,3OC6,<40% identity
+Citro_001b,C4,0.3714,5L09,3OC6,<40% identity
+Ent_001,C4,0.3831,5L09,3OC6,<40% identity
+Pan_001,C4,0.3959,5L09,3OC6,<40% identity
+Pect_001b,3OC8,0.496,5L09,3OC6,≥40% but different ligand
+Pse_004c,3OHC6,0.2934,8B4A,C4,<40% identity
+Pse_004d,3OHC6,0.3868,8B4A,C4,<40% identity
+Pse_009,3OC6,0.3144,5L09,3OC6,<40% identity
+Vib_002a,3OC10,0.3008,2UV0,3OC12,<40% identity
+Vib_002b,3OC10,0.3307,2UV0,3OC12,<40% identity

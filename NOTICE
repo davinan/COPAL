@@ -1,0 +1,35 @@
+COPAL
+=====
+
+This repository is licensed under the MIT License (see LICENSE) for all
+original code, documentation, and data authored as part of this project.
+
+Third-party components
+----------------------
+
+`third_party/alphafold3-patches/confidence_types.py`
+    Derived from AlphaFold 3 source code by Google DeepMind. Distributed
+    under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+    International License (CC-BY-NC-SA 4.0). See
+    `third_party/alphafold3-patches/LICENSE` for the full license text and
+    `third_party/alphafold3-patches/README.md` for provenance and usage.
+
+External models invoked at runtime (not redistributed in this repository)
+-------------------------------------------------------------------------
+
+- AlphaFold 3 (https://github.com/google-deepmind/alphafold3)
+    Source: CC-BY-NC-SA 4.0. Model parameters: separate restricted terms
+    of use granted by Google DeepMind. Non-commercial use only.
+
+- Boltz2 (https://github.com/jwohlwend/boltz)
+    MIT License (code and weights).
+
+- RosettaFold3 / Foundry (https://github.com/RosettaCommons/foundry)
+    BSD-3-Clause.
+
+- BLAST+ (https://blast.ncbi.nlm.nih.gov/Blast.cgi)
+    NCBI public-domain software.
+
+Users running the inference pipeline are responsible for complying with the
+terms of each external model's license, including AlphaFold 3's
+non-commercial restriction.

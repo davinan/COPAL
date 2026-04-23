@@ -1,0 +1,19 @@
+refahl_id,cognate_ligand,max_identity_to_any_pdb,closest_pdb,closest_pdb_ligand,reason
+Bra_002b,Cinn,0.2669,2UV0,3OC12,<40% identity
+Mes_003,C6,0.2769,8B4A,C4,<40% identity
+Mes_004,C12,0.2698,2UV0,3OC12,<40% identity
+MethA_003,C12,0.2946,2UV0,3OC12,<40% identity
+MethA_006c,3OHC12:1,0.3059,3SZT,3OC12,<40% identity
+Pand_001,C8,0.3043,4Y15,3OC6,<40% identity
+Ser_001c,C4,0.4786,5L09,3OC6,≥40% but different ligand
+Clone_00001,C12,0.3029,3QP1,C6,<40% identity
+Clone_00002,C12,0.2932,3SZT,3OC12,<40% identity
+Clone_00003,3OHC12,0.2469,3SZT,3OC12,<40% identity
+Clone_00004_R1,C6,0.29,8B4A,C4,<40% identity
+Clone_00004_R2,C6,0.2546,4Y15,3OC6,<40% identity
+Clone_00005,C6,0.2984,2Q0O,3OC8,<40% identity
+Clone_00007,C10,0.2689,3SZT,3OC12,<40% identity
+Clone_00009,3OC6,0.3143,2Q0O,3OC8,<40% identity
+Clone_00011,C8,0.2809,3QP1,C6,<40% identity
+Clone_00012_R1,C12,0.2551,8B4A,C4,<40% identity
+Clone_00012_R2,C12,0.1953,1L3L,3OC8,<40% identity
