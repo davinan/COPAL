@@ -43,6 +43,8 @@ dependencies = [
     "pydantic>=2.5",
     "pyyaml>=6.0",
     "openpyxl>=3.1",
+    "matplotlib>=3.7",
+    "ipywidgets>=7.6",
 ]
 
 [project.optional-dependencies]
@@ -60,7 +62,7 @@ copal = "copal.cli:app"
 "Issues" = "https://github.com/REPLACE_ME/copal/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/copal"]
+packages = ["src/copal", "src/ralph"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "src/copal/runner/scripts" = "copal/runner/scripts"
