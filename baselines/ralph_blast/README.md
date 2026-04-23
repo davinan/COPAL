@@ -15,16 +15,11 @@ hits to produce a ranked ligand list.
 
    Verify with `which blastp`.
 
-2. **The `ralph` Python package** (provides `ralph.blastp.blastp_query`,
-   `ralph.ranking.aggregate_rankings`, `ralph.database.load_scores`).
-   Install from source:
-
-   ```bash
-   git clone <ralph-repo-url> /path/to/ralph
-   uv pip install -e /path/to/ralph
-   ```
-
-   Or add it to a shared environment.
+2. **The `ralph` Python package** — ships in-tree under
+   [`src/ralph/`](../../src/ralph/) and is installed by `uv sync` from the
+   repo root. No separate install needed. Provides
+   `ralph.blastp.blastp_query`, `ralph.ranking.aggregate_rankings`, and
+   `ralph.database.load_scores`.
 
 3. **The `copal` package** (this repository) — `uv sync` from the repo root.
 
