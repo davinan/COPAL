@@ -14,6 +14,12 @@ Third-party components
     `third_party/alphafold3-patches/LICENSE` for the full license text and
     `third_party/alphafold3-patches/README.md` for provenance and usage.
 
+`src/ralph/`
+    Vendored snapshot of the RALPH package (https://github.com/davinan/ralph),
+    redistributed under the MIT License. See `src/ralph/LICENSE` for the
+    full license text and `src/ralph/VENDOR.md` for the exact upstream
+    commit.
+
 External models invoked at runtime (not redistributed in this repository)
 -------------------------------------------------------------------------
 
