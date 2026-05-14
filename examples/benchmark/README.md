@@ -6,8 +6,8 @@ at the repo root.
 
 In short:
 
-1. Download `predictions.csv` from Zenodo (DOI in the repo root README)
-   into `data/`.
+1. Download `predictions.csv` from the public data archive (DOI in the
+   repo root README) into `data/`.
 2. From the repo root:
 
    ```bash

@@ -7,6 +7,7 @@ repository for full reproducibility of the paper benchmark.
 | ---- | ---- | ------- |
 | `benchmark_data_all_corrected.csv` | ~200 KB | Per-receptor labels: `refahl_id`, `seq`, `true_ahl_id`, `true_ahl_abbrev`, `split` (`RefAHL`, `wetlabexp`, `solo`, …), `refahl_confidence_rating`, `msa_path`. Used by `copal analyze --labels` and as a receptors CSV for `copal predict`. `msa_path` values are repo-root-relative (`data/benchmark_msas/*.a3m`); extract `benchmark_msas.tar.xz` before running inference (see below). |
 | `benchmark_msas.tar.xz` | 31 MB | ColabFold-style `.a3m` MSAs for all 281 benchmark receptors (one file per `refahl_id`, keyed by the number in the `msa_path` column). Extract with `tar -xJf data/benchmark_msas.tar.xz -C data/benchmark_msas/`. |
+| `predictions.csv.xz` | 5 MB | Pre-collected per-prediction ipTM/PAE/affinity table (277,066 rows; `batch_idx, luxr, ahl, luxr_ahl, pae_interface, min_pae_interface, iptm, seed, model, affinity_*`). Decompress with `xz -dk data/predictions.csv.xz`. Drop-in equivalent of the externally hosted `predictions.csv`; consumed by `copal analyze --input-csv data/predictions.csv` and by `applications/run_analysis_extended.sh`. |
 | `benchmark_ligands.csv` | 4 KB | Benchmark ligand subset used at inference time (`AHLid`, `smiles`, …). |
 | `Final_confirmed_ligands_58_annotated.csv` | 5 KB | Annotated AHL ligand metadata (58 entries; `AHLid`, `abbreviation`, `Formula`, `smi`, `subcategory`). Used by `copal analyze --ligands`. |
 | `curated_conf1_no_leakage.csv` | 2 KB | RefAHL conf=1 receptors retained after sequence-identity leakage filter. |
@@ -31,13 +32,13 @@ MSAs: `df['msa_path'] = '/abs/path/' + df['msa_path'].str.replace('data/benchmar
 
 ## Larger artifacts hosted externally
 
-Files that are too large to commit live on Zenodo (DOIs filled in at
-publication time):
+Files that are too large to commit live on an external data host (host
+and DOIs TBD, filled in at publication time):
 
 | Artifact | Hosted | Notes |
 | -------- | ------ | ----- |
-| `predictions.csv` (~27 MB) | Zenodo: `<DOI_ANALYSIS>` | Pre-collected per-prediction ipTM/PAE table. Drop into this directory to run `copal analyze --input-csv data/predictions.csv`. |
-| Raw model predictions (CIF + JSON, ~GBs) | Zenodo: `<DOI_PREDICTIONS>` | Optional: only needed if you want to re-run the analysis collection phase from scratch. |
+| `predictions.csv` (~27 MB) | `<DOI_ANALYSIS>` (host TBD) | Pre-collected per-prediction ipTM/PAE table. Drop into this directory to run `copal analyze --input-csv data/predictions.csv`. |
+| Raw model predictions (CIF + JSON, ~GBs) | `<DOI_PREDICTIONS>` (host TBD) | Optional: only needed if you want to re-run the analysis collection phase from scratch. |
 
 ## Optional reference assets
 

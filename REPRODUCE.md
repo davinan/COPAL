@@ -6,11 +6,12 @@ Two paths, depending on whether you want to re-run inference.
 
 The fastest way to reproduce the figures and tables from the paper.
 
-1. Download `predictions.csv` (~27 MB) from Zenodo (`<DOI_ANALYSIS>`,
-   link will be added at publication time) and place it under `data/`:
+1. Download `predictions.csv` (~27 MB) from the public data archive
+   (host TBD; `<DOI_ANALYSIS>`, link will be added at publication time)
+   and place it under `data/`:
 
    ```bash
-   wget <ZENODO_URL>/predictions.csv -O data/predictions.csv
+   wget <DATA_URL>/predictions.csv -O data/predictions.csv
    ```
 
 2. Install the package and run the analysis:

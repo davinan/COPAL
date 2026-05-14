@@ -97,6 +97,14 @@ def analyze(
         help="Override the 'all predictions present' guard "
              "(defaults to the number of rows in the ligands CSV).",
     ),
+    aggregation: str = typer.Option(
+        "sum", "--aggregation",
+        help="Per-model rank aggregator: sum (default), mean, median, rrf, min, max.",
+    ),
+    rrf_k: int = typer.Option(
+        60, "--rrf-k",
+        help="RRF damping constant (only used when --aggregation=rrf).",
+    ),
 ) -> None:
     """Collect (optional) → postprocess → generate analysis CSVs."""
     import sys
@@ -109,6 +117,8 @@ def analyze(
         "--labels-path", str(labels_path),
         "--ligands-path", str(ligands_path),
         "--af3-iptm-source", af3_iptm_source,
+        "--aggregation", aggregation,
+        "--rrf-k", str(rrf_k),
     ]
     if input_csv is not None:
         cli_args += ["--input-csv", str(input_csv)]

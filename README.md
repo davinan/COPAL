@@ -113,17 +113,18 @@ Full setup (containers, weights, env vars) is in
 Two reproduction paths in [`REPRODUCE.md`](REPRODUCE.md):
 
 1. **Analysis-only** (no GPUs needed) — download a ~27 MB pre-collected
-   ipTM CSV from Zenodo, run `copal analyze`, generate all paper tables.
+   ipTM CSV from a public data archive, run `copal analyze`, generate all
+   paper tables.
 2. **Full inference** — re-run AF3/Boltz2/RF3 on the benchmark, then
    `copal analyze`.
 
 | Artifact | Hosted |
 | -------- | ------ |
-| `predictions.csv` | Zenodo `<DOI_ANALYSIS>` |
-| Raw model predictions (CIF + JSON) | Zenodo `<DOI_PREDICTIONS>` |
-| MSAs used at inference | Zenodo `<DOI_MSAS>` |
+| `predictions.csv` | `<DOI_ANALYSIS>` |
+| Raw model predictions (CIF + JSON) | `<DOI_PREDICTIONS>` |
+| MSAs used at inference | `<DOI_MSAS>` |
 
-DOIs will be filled in at publication time.
+Data host and DOIs will be filled in at publication time (TBD).
 
 ## Repository layout
 

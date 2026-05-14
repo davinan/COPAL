@@ -11,8 +11,8 @@ lengths for this benchmark.
 ## 1. Python environment
 
 ```bash
-git clone https://github.com/REPLACE_ME/copal.git
-cd copal
+git clone https://github.com/davinan/COPAL.git
+cd COPAL
 uv sync                                    # creates .venv/, installs copal + deps
 uv run copal --help                        # smoke test
 ```

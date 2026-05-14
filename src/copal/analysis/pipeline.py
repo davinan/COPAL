@@ -295,7 +295,10 @@ def make_ranking(
     if df[col].isna().any():
         raise ValueError(f"Column {col} contains NaN values")
     df = df.sort_values(col, ascending=ascending)
-    df["rank"] = df[col].rank(ascending=ascending, method="first")
+    # Ties at the per-model score level (e.g. exact ipTM ties) get the same
+    # rank rather than a row-order-dependent break. This makes downstream
+    # aggregation reproducible under input row reorderings.
+    df["rank"] = df[col].rank(ascending=ascending, method="min")
     return df
 
 
@@ -331,17 +334,61 @@ def compute_all_rankings(
     return pd.concat(rankings, ignore_index=True)
 
 
+AGGREGATIONS = ("rrf", "sum", "mean", "median", "min", "max")
+DEFAULT_AGGREGATION = "sum"
+DEFAULT_RRF_K = 60
+
+
 def make_ensemble_ranking(
-    rankings_df: pd.DataFrame, models_to_include: list[str]
+    rankings_df: pd.DataFrame,
+    models_to_include: list[str],
+    aggregation: str = DEFAULT_AGGREGATION,
+    rrf_k: int = DEFAULT_RRF_K,
 ) -> pd.DataFrame:
-    """Compute ensemble rank per luxr_ahl as sum of ranks over models_to_include, then rank by that sum."""
+    """Aggregate per-model ranks into an ensemble rank per (luxr, luxr_ahl).
+
+    Aggregations (no fitting; benchmark-only):
+      * ``rrf``    — Reciprocal Rank Fusion: ``score = sum_models 1 / (k + rank)``
+                     (Cormack et al., CIKM 2009). Robust to a single bad model
+                     and concentrates resolution at the top of each per-model
+                     ranking, matching the top-k success metric used downstream.
+      * ``sum`` / ``mean`` / ``median`` / ``min`` / ``max`` — corresponding
+                     reduction over per-model ranks. ``mean`` is the right
+                     choice when comparing across model-subset ablations
+                     because it normalizes for the number of models included.
+
+    For RRF the final rank is ascending in ``-score`` (higher score = better).
+    For rank-based aggregations the final rank is ascending in the aggregated
+    rank (lower rank = better). In both cases ties at the final step share the
+    better rank (``method="min"``), which is reproducible under row reorderings
+    and gives the standard "generous" interpretation of top-k membership.
+    """
+    if aggregation not in AGGREGATIONS:
+        raise ValueError(
+            f"Unknown aggregation {aggregation!r}; expected one of {AGGREGATIONS}"
+        )
     df = rankings_df[rankings_df.model.isin(models_to_include)].copy()
-    df = df.groupby(["luxr", "luxr_ahl"])[["rank"]].sum().reset_index()
-    df["ensemble_score"] = df["rank"]
-    df["ensemble_rank"] = df.groupby("luxr")["ensemble_score"].rank(
-        ascending=True, method="first"
-    )
-    return df[["luxr_ahl", "ensemble_rank", "ensemble_score"]]
+
+    if aggregation == "rrf":
+        df["_score"] = 1.0 / (rrf_k + df["rank"].astype(float))
+        agg = (
+            df.groupby(["luxr", "luxr_ahl"], as_index=False)["_score"].sum()
+            .rename(columns={"_score": "ensemble_score"})
+        )
+        agg["ensemble_rank"] = agg.groupby("luxr")["ensemble_score"].rank(
+            ascending=False, method="min"
+        )
+    else:
+        agg = (
+            df.groupby(["luxr", "luxr_ahl"], as_index=False)["rank"]
+            .agg(aggregation)
+            .rename(columns={"rank": "ensemble_score"})
+        )
+        agg["ensemble_rank"] = agg.groupby("luxr")["ensemble_score"].rank(
+            ascending=True, method="min"
+        )
+
+    return agg[["luxr_ahl", "ensemble_rank", "ensemble_score"]]
 
 
 def get_true_ahl_ranking(
@@ -359,7 +406,10 @@ def get_true_ahl_ranking(
 
 
 def build_ablation_table(
-    rankings_df: pd.DataFrame, ablation_df: pd.DataFrame
+    rankings_df: pd.DataFrame,
+    ablation_df: pd.DataFrame,
+    aggregation: str = DEFAULT_AGGREGATION,
+    rrf_k: int = DEFAULT_RRF_K,
 ) -> pd.DataFrame:
     """Compute top-5/top-6 success rates for all subsets of models (af3, boltz2, boltz2affinity, rf3)."""
     all_models = ["af3", "boltz2", "boltz2affinity", "rf3"]
@@ -370,7 +420,7 @@ def build_ablation_table(
 
     results = []
     for combo in model_combos:
-        ens = make_ensemble_ranking(rankings_df, combo)
+        ens = make_ensemble_ranking(rankings_df, combo, aggregation=aggregation, rrf_k=rrf_k)
         true_ranks = get_true_ahl_ranking(ablation_df, ens)
         if true_ranks.empty:
             continue
@@ -451,6 +501,8 @@ def run_postprocess(
     skip_ablation: bool = False,
     skip_done_json: bool = False,
     expected_ligand_count: int = 58,
+    aggregation: str = DEFAULT_AGGREGATION,
+    rrf_k: int = DEFAULT_RRF_K,
 ) -> None:
     """Read processed CSV, write rankings, ensemble, ablation table, and done JSON to workflow_dir."""
     workflow_dir.mkdir(parents=True, exist_ok=True)
@@ -475,11 +527,14 @@ def run_postprocess(
 
     if (not skip_ensemble) and all_rankings is not None:
         ensemble_rankings = make_ensemble_ranking(
-            all_rankings, ["af3", "boltz2", "boltz2affinity", "rf3"]
+            all_rankings,
+            ["af3", "boltz2", "boltz2affinity", "rf3"],
+            aggregation=aggregation,
+            rrf_k=rrf_k,
         )
         ensemble_path = workflow_dir / ENSEMBLE_CSV_NAME
         ensemble_rankings.to_csv(ensemble_path, index=False)
-        print(f"Wrote {ensemble_path} ({len(ensemble_rankings)} rows)")
+        print(f"Wrote {ensemble_path} ({len(ensemble_rankings)} rows; aggregation={aggregation})")
 
         if (not skip_ablation) and labels_with_true is not None:
             ablation_df = labels_with_true.copy()
@@ -498,7 +553,9 @@ def run_postprocess(
                     | ablation_df.luxr.str.endswith("CORRECT")
                 )
             ]
-            ablation_table = build_ablation_table(all_rankings, ablation_df)
+            ablation_table = build_ablation_table(
+                all_rankings, ablation_df, aggregation=aggregation, rrf_k=rrf_k,
+            )
             ablation_path = workflow_dir / "ablation_table.csv"
             ablation_table.to_csv(ablation_path, index=False)
             print(f"Wrote {ablation_path} ({len(ablation_table)} rows)")
@@ -1156,6 +1213,8 @@ def run_generate(
     ligands_path: Path,
     ablation_path: Path | None = None,
     no_leakage_path: Path | None = None,
+    aggregation: str = DEFAULT_AGGREGATION,
+    rrf_k: int = DEFAULT_RRF_K,
 ) -> None:
     """
     Read rankings, ensemble, ablation, labels, ligands from workflow_dir (and ablation_path);
@@ -1304,7 +1363,9 @@ def run_generate(
         ]
         nl_abl_df = nl_labels_with_true.copy()
         nl_abl_df["luxr"] = nl_abl_df["LuxR_name"]
-        nl_ablation_table = build_ablation_table(rankings, nl_abl_df)
+        nl_ablation_table = build_ablation_table(
+            rankings, nl_abl_df, aggregation=aggregation, rrf_k=rrf_k,
+        )
         nl_ablation_table.to_csv(ablation_dir / "ablation_table_raw_no_leakage.csv", index=False)
         nl_ablation_summary = build_ablation_summary(nl_ablation_table)
         nl_ablation_summary.to_csv(ablation_dir / "ablation_table_no_leakage.csv", index=False)
@@ -1463,6 +1524,24 @@ def parse_args() -> argparse.Namespace:
         help="Override the 'all predictions present' guard in compute_all_rankings. "
              "Defaults to the number of rows in the ligands CSV (58 for the paper benchmark).",
     )
+    parser.add_argument(
+        "--aggregation",
+        type=str,
+        default=DEFAULT_AGGREGATION,
+        choices=AGGREGATIONS,
+        help=(
+            "How to aggregate per-model ranks into the ensemble score. "
+            "'rrf' (default) is Reciprocal Rank Fusion, robust to one bad "
+            "model and aligned with top-k success. 'sum'/'mean'/'median'/"
+            "'min'/'max' are simple reductions over per-model ranks."
+        ),
+    )
+    parser.add_argument(
+        "--rrf-k",
+        type=int,
+        default=DEFAULT_RRF_K,
+        help=f"RRF damping constant (default {DEFAULT_RRF_K}; only used when --aggregation=rrf).",
+    )
     return parser.parse_args()
 
 
@@ -1503,6 +1582,8 @@ def main() -> None:
         skip_ablation=args.skip_ablation,
         skip_done_json=args.skip_done_json,
         expected_ligand_count=expected_ligand_count,
+        aggregation=args.aggregation,
+        rrf_k=args.rrf_k,
     )
 
     if args.skip_generate:
@@ -1527,6 +1608,8 @@ def main() -> None:
         args.ligands_path,
         ablation_path=args.ablation_path,
         no_leakage_path=args.no_leakage_csv,
+        aggregation=args.aggregation,
+        rrf_k=args.rrf_k,
     )
 
 

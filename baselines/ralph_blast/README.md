@@ -57,7 +57,7 @@ Where `ralph_scores.csv` is expected to have at least the columns
 for the exact schema).
 
 > If you don't have a RALPH source FASTA + scores file, contact the COPAL
-> authors — the data accompanying the paper is hosted on Zenodo (see the
+> authors — the data accompanying the paper is hosted externally (see the
 > repository root README.md for the DOI).
 
 ## Running

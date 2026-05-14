@@ -1,3 +1,0 @@
-/mnt/home/dnan/projects/luxr/src/publication_repo/external/wrappers/af3.sh copal_run_test/pipeline/inputs/AF3/0 copal_run_test/pipeline/outs/AF3/0
-/mnt/home/dnan/projects/luxr/src/publication_repo/external/wrappers/boltz2.sh copal_run_test/pipeline/inputs/Boltz2/0 copal_run_test/pipeline/outs/Boltz2/0
-/mnt/home/dnan/projects/luxr/src/publication_repo/src/copal/runner/scripts/rf3.sh copal_run_test/pipeline/inputs/RF3/0 copal_run_test/pipeline/outs/RF3/0

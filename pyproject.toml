@@ -58,8 +58,8 @@ dev = [
 copal = "copal.cli:app"
 
 [project.urls]
-"Homepage" = "https://github.com/REPLACE_ME/copal"
-"Issues" = "https://github.com/REPLACE_ME/copal/issues"
+"Homepage" = "https://github.com/davinan/COPAL"
+"Issues" = "https://github.com/davinan/COPAL/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/copal", "src/ralph"]

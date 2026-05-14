@@ -31,8 +31,33 @@ Thumbs.db
 .env.local
 
 # Reproduction artifacts (downloaded or generated)
-data/benchmark_data_all_processed_iptm.csv
+data/predictions.csv
+data/predictions.csv.xz
 data/benchmark_msas/
 outputs/
+outputs_official_workflow/
+outputs_official_workflow.zip
+outputs_sweep/
 results/
 *.log
+
+# Vendored model installs (install per INSTALLATION.md)
+external/alphafold3/
+external/foundry/
+external/boltz/
+
+# Scratch test artifacts
+copal_run_test/
+
+# Internal planning artifacts
+docs/superpowers/
+
+# Accidental local dotfiles
+.bash_profile
+.bashrc
+.profile
+.zprofile
+.zshrc
+.mcp.json
+.ripgreprc
+.gitmodules
