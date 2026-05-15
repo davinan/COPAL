@@ -32,6 +32,8 @@
 #   done
 set -euo pipefail
 
+echo "[DEPRECATED] applications/run_analysis_extended.sh is deprecated; use 'uv run copal analyze' (Hydra-backed) instead. See src/copal/config/set/*.yaml for named sets." 1>&2
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"

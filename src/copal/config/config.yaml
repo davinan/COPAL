@@ -1,0 +1,12 @@
+defaults:
+  - set: refAHL_all_conf_no_leakage
+  - paths: repo
+  - analysis: default
+  - _self_
+
+hydra:
+  run:
+    dir: ${paths.output_root}/${set.name}/_hydra
+  output_subdir: null
+  job:
+    chdir: false

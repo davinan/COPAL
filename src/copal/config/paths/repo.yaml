@@ -1,0 +1,7 @@
+repo_root: ${oc.env:COPAL_REPO_ROOT,${cwd:}}
+data_root: ${paths.repo_root}/data
+predictions_basepath: ${paths.repo_root}/predictions
+af3_basepath: null
+workflow_dir: ${paths.repo_root}/outputs_official_workflow
+output_root: ${paths.workflow_dir}/results
+input_csv: ${paths.workflow_dir}/predictions.csv

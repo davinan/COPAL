@@ -1,0 +1,15 @@
+name: refAHL_all_conf_no_leakage
+description: "RefAHL conf {1,2,3}, intersected with union of three curated no-leakage CSVs."
+labels_path: ${paths.data_root}/benchmark_data_all_corrected.csv
+ligands_path: ${paths.data_root}/Final_confirmed_ligands_58_annotated.csv
+filter:
+  splits: ["RefAHL"]               # case-insensitive; [] / null = no split filter
+  confidences: [1, 2, 3]           # [] / null = no confidence filter
+  no_leakage_csvs:                 # [] / null = no leakage filter
+    - ${paths.data_root}/curated_conf1_no_leakage.csv
+    - ${paths.data_root}/curated_conf2_no_leakage.csv
+    - ${paths.data_root}/curated_conf3_no_leakage.csv
+  # Legacy run_analysis_extended.sh drops "_R1"/"_R2" replicates from the
+  # no-leakage subset; match that here so the deliverable command reproduces
+  # the published mpkt_all_conf_no_leakage.csv row set exactly.
+  exclude_suffixes: ["LONG", "SHORT", "MED", "_R1", "_R2"]   # [] / null = no suffix exclusion

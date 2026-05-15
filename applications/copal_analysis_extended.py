@@ -142,6 +142,14 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    import sys as _sys
+
+    print(
+        "[DEPRECATED] applications/copal_analysis_extended.py is deprecated; "
+        "use 'uv run copal analyze' (Hydra-backed) instead. "
+        "See src/copal/config/set/*.yaml for available named sets.",
+        file=_sys.stderr,
+    )
     args = parse_args()
     workflow_dir = args.workflow_dir
     output_root = args.output_root

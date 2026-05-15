@@ -1206,6 +1206,174 @@ def write_results_csv(df: pd.DataFrame, out_path: Path) -> None:
     df.to_csv(out_path, index=False)
 
 
+def _normalize_rankings(rankings_raw: pd.DataFrame) -> pd.DataFrame:
+    """Apply the rankings-half of `normalize_inputs`."""
+    out = rankings_raw.copy()
+    out["luxr"] = out["luxr"].apply(normalize_token)
+    out["ahl"] = out["ahl"].apply(normalize_token)
+    out["model"] = out["model"].astype(str).str.strip().str.lower()
+    out["rank"] = pd.to_numeric(out["rank"], errors="coerce")
+    out["luxr_ahl"] = out["luxr"] + "_" + out["ahl"]
+    return out
+
+
+def _normalize_ensemble(ensemble_raw: pd.DataFrame) -> pd.DataFrame:
+    """Apply the ensemble-half of `normalize_inputs`."""
+    out = ensemble_raw.copy()
+    out["luxr_ahl"] = out["luxr_ahl"].apply(normalize_token)
+    split = out["luxr_ahl"].str.rsplit("_", n=1)
+    out["luxr"] = split.str[0]
+    out["ahl"] = split.str[1]
+    out["ensemble_rank"] = pd.to_numeric(out["ensemble_rank"], errors="coerce")
+    return out
+
+
+def _derive_ensemble(
+    rankings: pd.DataFrame,
+    aggregation: str,
+    rrf_k: int,
+) -> pd.DataFrame:
+    """Re-derive the ensemble ranking from per-model rankings with a custom aggregation."""
+    models = sorted(set(rankings["model"]).intersection(MODEL_NAME_MAP.keys()))
+    if not models:
+        raise ValueError("rankings contains no recognized model names; cannot derive ensemble.")
+    ensemble = make_ensemble_ranking(rankings, models, aggregation=aggregation, rrf_k=rrf_k)
+    return _normalize_ensemble(ensemble)
+
+
+def run_analysis_for_set(
+    bset,
+    workflow_dir: Path,
+    output_root: Path,
+    aggregation: str = DEFAULT_AGGREGATION,
+    rrf_k: int = DEFAULT_RRF_K,
+    per_model_split: tuple[str, ...] = ("AF3", "Boltz2", "Boltz2Affinity", "RF3"),
+    skip_ablation: bool = False,
+) -> None:
+    """Produce every analysis artifact for ONE resolved benchmark set.
+
+    `bset` is a `copal.analysis.sets.BenchmarkSet` — already filtered by split,
+    confidence, leakage, and suffix. No internal looping over conf or leakage.
+    Outputs land under ``output_root / bset.name / <artifact_kind> / <file>.csv``.
+    """
+    import logging
+
+    log = logging.getLogger(__name__)
+
+    if bset.is_empty():
+        log.error("Benchmark set %r is empty; nothing to write.", bset.name)
+        raise SystemExit(2)
+
+    workflow_dir = Path(workflow_dir)
+    output_root = Path(output_root)
+
+    rankings_csv = workflow_dir / RANKINGS_CSV_NAME
+    ensemble_csv = workflow_dir / ENSEMBLE_CSV_NAME
+    if not rankings_csv.exists():
+        raise FileNotFoundError(f"Required rankings CSV missing: {rankings_csv}")
+    if not ensemble_csv.exists():
+        raise FileNotFoundError(f"Required ensemble CSV missing: {ensemble_csv}")
+
+    rankings = _normalize_rankings(pd.read_csv(rankings_csv))
+    ensemble = _normalize_ensemble(pd.read_csv(ensemble_csv))
+
+    if aggregation != DEFAULT_AGGREGATION:
+        log.info(
+            "Aggregation %r differs from cached default %r; re-deriving ensemble in memory.",
+            aggregation, DEFAULT_AGGREGATION,
+        )
+        ensemble = _derive_ensemble(rankings, aggregation, rrf_k)
+
+    base = output_root / bset.name
+    dirs = {
+        "ranking_performance": base / "ranking_performance",
+        "acyl_moiety": base / "acyl_moiety",
+        "chemical_similarity": base / "chemical_similarity",
+        "mpkt": base / "mpkt",
+        "full_rankings": base / "full_rankings",
+        "ablation": base / "ablation",
+    }
+    for d in dirs.values():
+        d.mkdir(parents=True, exist_ok=True)
+
+    labels = bset.labels
+    ligands = bset.ligands
+
+    lookup = build_true_rank_lookup(labels, rankings, ensemble)
+
+    write_results_csv(
+        build_ranking_performance(labels, lookup),
+        dirs["ranking_performance"] / "ranking_performance.csv",
+    )
+
+    write_results_csv(
+        build_acyl_moiety(labels, ligands, lookup),
+        dirs["acyl_moiety"] / "acyl_moiety.csv",
+    )
+    for model_name in per_model_split:
+        write_results_csv(
+            build_acyl_moiety(labels, ligands, lookup, rank_model_name=model_name),
+            dirs["acyl_moiety"] / f"acyl_moiety_{model_name}.csv",
+        )
+
+    write_results_csv(
+        build_chemical_similarity(labels, ensemble, ligands),
+        dirs["chemical_similarity"] / "chemical_similarity.csv",
+    )
+
+    ensemble_true = (
+        lookup[lookup["model_name"] == "Ensemble"][["LuxR_name", "true_rank"]]
+        .drop_duplicates()
+    )
+    mpkt_df = build_mpkt(labels, rankings, ensemble_true)
+    write_results_csv(mpkt_df, dirs["mpkt"] / "mpkt.csv")
+
+    valid_rows = mpkt_df.dropna(subset=["mpKT", "Ensemble True AHL Ranking"])
+    if len(valid_rows) >= 4:
+        quartile_df = build_mpkt_quartile_top6_success(mpkt_df)
+        quartile_df.to_csv(dirs["mpkt"] / "mpkt_quartile_top6.csv", index=False)
+    else:
+        log.warning(
+            "Set %r has %d rows with both mpKT and ensemble rank; skipping mpkt_quartile_top6.csv.",
+            bset.name, len(valid_rows),
+        )
+    if len(valid_rows) >= 3:
+        build_mpkt_correlation_test(mpkt_df, dirs["mpkt"] / "mpkt_correlation.csv")
+    else:
+        log.warning(
+            "Set %r has %d rows for correlation; skipping mpkt_correlation.csv.",
+            bset.name, len(valid_rows),
+        )
+
+    write_results_csv(
+        build_full_rankings(labels, rankings, ensemble, ligands),
+        dirs["full_rankings"] / "full_rankings.csv",
+    )
+
+    available_models = sorted(set(rankings["model"]).intersection(MODEL_NAME_MAP.keys()))
+    if skip_ablation:
+        log.info("skip_ablation set; skipping ablation for set %r.", bset.name)
+    elif len(available_models) < 2:
+        log.warning(
+            "Set %r has only %d model(s) in rankings (%r); skipping ablation.",
+            bset.name, len(available_models), available_models,
+        )
+    else:
+        abl_pool = labels[labels["true_ahl_id"].notna()].copy()
+        abl_pool["luxr"] = abl_pool["LuxR_name"]
+        abl_table = build_ablation_table(
+            rankings, abl_pool, aggregation=aggregation, rrf_k=rrf_k,
+        )
+        abl_table.to_csv(dirs["ablation"] / "ablation_table_raw.csv", index=False)
+        abl_summary = build_ablation_summary(abl_table)
+        abl_summary.to_csv(dirs["ablation"] / "ablation_table.csv", index=False)
+
+    log.info(
+        "run_analysis_for_set complete: set=%r n_luxrs=%d out=%s",
+        bset.name, bset.n_luxrs(), base,
+    )
+
+
 def run_generate(
     workflow_dir: Path,
     output_root: Path,
@@ -1546,6 +1714,14 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    import warnings
+
+    warnings.warn(
+        "copal.analysis.pipeline.main() is deprecated; "
+        "use 'copal analyze' (Hydra-backed) instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     args = parse_args()
     workflow_dir = args.workflow_dir
 

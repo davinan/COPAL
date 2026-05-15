@@ -1,0 +1,9 @@
+aggregation: sum                   # sum | mean | median | rrf | min | max
+rrf_k: 60
+af3_iptm_source: json
+expected_ligand_count: null
+per_model_split: ["AF3", "Boltz2", "Boltz2Affinity", "RF3"]
+skip:
+  collect: true                    # default: don't re-collect raw predictions
+  postprocess: true                # default: assume per_model_rankings.csv exists
+  ablation: false

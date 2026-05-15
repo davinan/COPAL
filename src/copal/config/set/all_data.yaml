@@ -1,0 +1,5 @@
+name: all_data
+description: "Every row of the labels CSV; no filtering on any axis (demo of empty-filter semantics)."
+labels_path: ${paths.data_root}/benchmark_data_all_corrected.csv
+ligands_path: ${paths.data_root}/Final_confirmed_ligands_58_annotated.csv
+filter: {}

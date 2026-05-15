@@ -64,89 +64,26 @@ def predict(
     )
 
 
-@app.command()
-def analyze(
-    workflow_dir: Path = typer.Option(..., "--workflow-dir", file_okay=False,
-                                      help="Where the processed/ranking/ensemble CSVs live."),
-    output_root: Path = typer.Option(..., "--output-root", file_okay=False,
-                                     help="Where ranking_performance/, full_rankings/ etc. are written."),
-    labels_path: Path = typer.Option(..., "--labels", "--labels-path", exists=True, dir_okay=False,
-                                     help="Labels CSV (refahl_id, true_ahl_abbrev, split, confidence_rating, ...)."),
-    ligands_path: Path = typer.Option(..., "--ligands", "--ligands-path", exists=True, dir_okay=False,
-                                      help="Ligands metadata CSV (AHLid, abbreviation, smi, ...)."),
-    input_csv: Path | None = typer.Option(None, "--input-csv", exists=True, dir_okay=False,
-                                          help="Pre-collected processed CSV (skips collect)."),
-    basepath: Path | None = typer.Option(None, "--basepath", exists=True, file_okay=False,
-                                         help="Required only if collecting predictions from disk."),
-    af3_basepath: Path | None = typer.Option(None, "--af3-basepath", exists=True, file_okay=False),
-    af3_iptm_source: str = typer.Option("json", "--af3-iptm-source",
-                                        help='"base" or "json".'),
-    no_leakage_csv: Path | None = typer.Option(None, "--no-leakage-csv", exists=True, dir_okay=False),
-    skip_rankings: bool = typer.Option(False, "--skip-rankings",
-                                       help="Skip per-model ranking (useful when luxr_ahl count != 58)."),
-    skip_ensemble: bool = typer.Option(False, "--skip-ensemble",
-                                       help="Skip ensemble rank aggregation."),
-    skip_ablation: bool = typer.Option(False, "--skip-ablation",
-                                       help="Skip ablation-table generation."),
-    skip_done_json: bool = typer.Option(False, "--skip-done-json",
-                                        help="Skip done_pairs.json emission."),
-    skip_generate: bool = typer.Option(False, "--skip-generate",
-                                       help="Stop after postprocess; don't emit results/."),
-    expected_ligand_count: int | None = typer.Option(
-        None, "--expected-ligand-count",
-        help="Override the 'all predictions present' guard "
-             "(defaults to the number of rows in the ligands CSV).",
-    ),
-    aggregation: str = typer.Option(
-        "sum", "--aggregation",
-        help="Per-model rank aggregator: sum (default), mean, median, rrf, min, max.",
-    ),
-    rrf_k: int = typer.Option(
-        60, "--rrf-k",
-        help="RRF damping constant (only used when --aggregation=rrf).",
-    ),
-) -> None:
-    """Collect (optional) → postprocess → generate analysis CSVs."""
-    import sys
+@app.command(
+    context_settings={
+        "allow_extra_args": True,
+        "ignore_unknown_options": True,
+    },
+)
+def analyze(ctx: typer.Context) -> None:
+    """Run the Hydra-driven single-set analysis.
 
-    from copal.analysis.pipeline import main as analysis_main
+    Defaults to ``set=refAHL_all_conf_no_leakage``. Override any config group or
+    leaf via standard Hydra syntax, for example:
 
-    cli_args = [
-        "--workflow-dir", str(workflow_dir),
-        "--output-root", str(output_root),
-        "--labels-path", str(labels_path),
-        "--ligands-path", str(ligands_path),
-        "--af3-iptm-source", af3_iptm_source,
-        "--aggregation", aggregation,
-        "--rrf-k", str(rrf_k),
-    ]
-    if input_csv is not None:
-        cli_args += ["--input-csv", str(input_csv)]
-    if basepath is not None:
-        cli_args += ["--basepath", str(basepath)]
-    if af3_basepath is not None:
-        cli_args += ["--af3-basepath", str(af3_basepath)]
-    if no_leakage_csv is not None:
-        cli_args += ["--no-leakage-csv", str(no_leakage_csv)]
-    if skip_rankings:
-        cli_args.append("--skip-rankings")
-    if skip_ensemble:
-        cli_args.append("--skip-ensemble")
-    if skip_ablation:
-        cli_args.append("--skip-ablation")
-    if skip_done_json:
-        cli_args.append("--skip-done-json")
-    if skip_generate:
-        cli_args.append("--skip-generate")
-    if expected_ligand_count is not None:
-        cli_args += ["--expected-ligand-count", str(expected_ligand_count)]
+        copal analyze
+        copal analyze set=refAHL_conf1
+        copal analyze analysis.aggregation=rrf paths.output_root=/tmp/sweep
+        copal analyze 'set.filter.confidences=[1,2]'
+    """
+    from copal.analysis.run import run_with_overrides
 
-    saved = sys.argv
-    try:
-        sys.argv = ["copal-analyze", *cli_args]
-        analysis_main()
-    finally:
-        sys.argv = saved
+    run_with_overrides(ctx.args)
 
 
 @app.command("seqid-filter")

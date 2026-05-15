@@ -1,0 +1,9 @@
+name: refAHL_conf2
+description: "RefAHL confidence 2 only; no no-leakage filter."
+labels_path: ${paths.data_root}/benchmark_data_all_corrected.csv
+ligands_path: ${paths.data_root}/Final_confirmed_ligands_58_annotated.csv
+filter:
+  splits: ["RefAHL"]
+  confidences: [2]
+  no_leakage_csvs: []
+  exclude_suffixes: ["LONG", "SHORT", "MED"]
