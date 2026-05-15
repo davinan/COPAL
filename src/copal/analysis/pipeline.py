@@ -849,7 +849,9 @@ def build_chemical_similarity(
                 "Top 6": max_mcs_for_luxr(row.LuxR_name, row.true_ahl_id, top6),
             }
         )
-    return pd.DataFrame(recs).sort_values("LuxR_name").reset_index(drop=True)
+    return pd.DataFrame(
+        recs, columns=["LuxR_name", "Top 1", "Top 3", "Top 5", "Top 6"]
+    ).sort_values("LuxR_name").reset_index(drop=True)
 
 
 def build_mpkt(
