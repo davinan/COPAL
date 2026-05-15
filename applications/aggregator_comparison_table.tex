@@ -1,0 +1,49 @@
+% \input-able tabular snippet comparing ensemble rank-aggregators on the
+% COPAL no-leakage subset (n = 97). Drop inside an existing table
+% environment; the caller owns \begin{table}, \caption, \label, and any
+% footnote text.
+%
+% Requires \usepackage{booktabs} in the preamble.
+%
+% Suggested caller pattern:
+%
+%   \begin{table}[t]
+%     \centering
+%     \caption{Top-$K$ ensemble success rate by rank-aggregator on the
+%       RefAHL confidence-\{1,2,3\} no-leakage subset ($n = 97$). Each
+%       cell shows the fraction of receptors whose cognate AHL is ranked
+%       $\le K$, with 95\% Wilson CI. \textbf{Sum} is the aggregator used
+%       throughout the paper.}
+%     \label{tab:aggregator-comparison}
+%     \small
+%     \input{aggregator_comparison_table.tex}
+%   \end{table}
+%
+% Suggested footnote text (place after the table environment, or via
+% \tablenotes if using threeparttable):
+%
+%   $^\dagger$Min's apparent top-1 dominance is a tie artifact: under min
+%   aggregation an average of 3.19 ligands per receptor tie at rank 1
+%   (versus 1.00 for RRF, 1.07 for Sum/Mean). Sum's top-5 set averages
+%   5.13 ligands per receptor versus exactly 5.00 for RRF -- a 2.6\%
+%   inflation. Ties are resolved with \texttt{method="min"} (tied items
+%   share the lower rank). $^\ddagger$The top-1 omnibus rejection is
+%   driven entirely by Min's tie inflation; after Bonferroni correction
+%   ($\alpha = 0.0033$, 15 pairs) no pairwise McNemar test separates Sum
+%   from Mean, Median, or RRF at any $K$.
+
+\begin{tabular}{lcccc}
+\toprule
+Aggregator & Top-1 & Top-3 & Top-5 & Top-6 \\
+\midrule
+\textbf{Sum} (Borda)        & 0.278 [0.20, 0.37]           & \textbf{0.536} [0.44, 0.63] & \textbf{0.670} [0.57, 0.76] & 0.670 [0.57, 0.76]           \\
+Mean                        & 0.278 [0.20, 0.37]           & \textbf{0.536} [0.44, 0.63] & \textbf{0.670} [0.57, 0.76] & 0.670 [0.57, 0.76]           \\
+RRF ($k\!=\!60$)            & 0.278 [0.20, 0.37]           & 0.505 [0.41, 0.60]          & 0.660 [0.56, 0.75]          & \textbf{0.711} [0.61, 0.79]  \\
+Median                      & 0.309 [0.23, 0.41]           & 0.464 [0.37, 0.56]          & 0.670 [0.57, 0.76]          & 0.701 [0.60, 0.78]           \\
+Min$^\dagger$               & 0.464$^\dagger$ [0.37, 0.56] & 0.495 [0.40, 0.59]          & 0.649 [0.55, 0.74]          & 0.680 [0.58, 0.76]           \\
+Max                         & 0.216 [0.15, 0.31]           & 0.515 [0.42, 0.61]          & 0.598 [0.50, 0.69]          & 0.608 [0.51, 0.70]           \\
+\midrule
+Cochran's $Q$ (df $= 5$)    & 45.83                                & 3.96 & 4.79 & 8.44 \\
+\quad $p$                   & $9.8\!\times\!10^{-9\,\ddagger}$     & 0.56 & 0.44 & 0.13 \\
+\bottomrule
+\end{tabular}
