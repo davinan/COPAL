@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 """
+DEPRECATED. This script targets the pre-Hydra `copal analyze --labels ...`
+CLI and the old per-confidence `curated_conf{N}_no_leakage.csv` layout, both
+of which have been superseded. It is retained for reference only and is not
+maintained. For the current workflow see `docs/reproduce_paper.md`.
+
 Extended COPAL analysis driver.
 
 Like ``copal analyze`` (i.e. ``copal.analysis.pipeline.run_generate``), but with

@@ -1,0 +1,11 @@
+name: inference
+description: "Inference mode: emit stylized rankings from raw workflow CSVs with no labels/ligand annotations."
+# Null paths trigger inference mode in load_set: labels and ligands are
+# synthesized from the rankings themselves (no ground truth required).
+labels_path: null
+ligands_path: null
+filter:
+  splits: []
+  confidences: []
+  no_leakage_csvs: []
+  exclude_suffixes: []

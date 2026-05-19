@@ -25,7 +25,7 @@ See [`input_formats.md`](input_formats.md) for the full spec.
 | `smiles` | str | SMILES. |
 | `abbreviation`, `formula`, `subcategory` | optional | Pass-through. |
 
-### Labels CSV (e.g. `data/benchmark_data_all_corrected.csv`)
+### Labels CSV (`data/paper_luxrs.csv`)
 
 Used only when running `copal analyze` in benchmark mode.
 
@@ -41,23 +41,25 @@ Used only when running `copal analyze` in benchmark mode.
 | `aa_length` | Sequence length. |
 | `strain_or_metagenome`, `pubmed_ids`, `notes` | Free-text. |
 
-### `Final_confirmed_ligands_58_annotated.csv`
+### `curated_ligands_annotated.csv`
 
-Per-AHL annotation table consumed by the analysis generate phase.
+Per-AHL annotation table (58 entries). Consumed by `copal analyze` as the
+set's `ligands_path`, and also valid as a `copal predict` ligands CSV.
 
 | Column | Notes |
 | ------ | ----- |
 | `AHLid` | E.g. `AHL01`. |
 | `abbreviation` | E.g. `3OC4`. |
 | `Formula`, `Exact mas` | Pass-through. |
-| `smi` | SMILES (`SMILES_COL` constant in analysis). |
-| `subcategory` | Acyl-chain length category (`Short`, `Medium`, `Long`). |
+| `smi` | SMILES (`SMILES_COL` constant in analysis; aliased to `smiles` by `copal predict`). |
+| `subcategory` | Acyl-chain length category (`Short`, `Medium`, `Long`, `Atypical`). |
 
-### `curated_conf{1,2,3}_no_leakage.csv`
+### `curated_luxR_RefAHL_no_leakage.csv`
 
-Per-confidence subset of RefAHL receptors that pass the leakage filter
+RefAHL receptors (all confidence tiers) that pass the leakage filter
 (<40% identity to any reference PDB structure with the same cognate
-ligand).
+ligand). Referenced by the `no_leakage_csvs` filter of the `*_no_leakage`
+set configs; per-confidence narrowing is done by the `confidences` filter.
 
 | Column | Notes |
 | ------ | ----- |
@@ -82,8 +84,10 @@ Built by `copal predict`; one row per (receptor, ligand) pair.
 
 ### `predictions.csv`
 
-Output of analysis Phase 1 (collect). One row per (receptor, ligand,
-model, batch) prediction. The most important columns:
+The pre-collected raw prediction table — one row per (receptor, ligand,
+model, batch) prediction. Produced by the **collect** step (the deprecated
+`python -m copal.analysis.pipeline` entrypoint; see [`../REPRODUCE.md`](../REPRODUCE.md)
+Path B) or downloaded from the data archive. The most important columns:
 
 | Column | Notes |
 | ------ | ----- |
@@ -97,18 +101,23 @@ model, batch) prediction. The most important columns:
 
 ### `per_model_rankings.csv`
 
-One row per (receptor, ligand, model). Columns: `luxr`, `model`, `ahl`,
-`rank`, `iptm`.
+One row per (receptor, ligand, model) — the postprocess output and the
+source of truth for all `copal analyze` artifacts. Columns: `rank`, `luxr`,
+`luxr_ahl`, `ahl`, `model`, `iptm`, `affinity_probability_binary` (the last
+populated only for `boltz2affinity` rows; `iptm` is blank for those).
 
 ### `ensemble_rankings.csv`
 
-One row per (receptor, ligand). Columns: `luxr_ahl`, `ensemble_rank`,
-`ensemble_score`.
+One row per (receptor, ligand). Columns: `luxr`, `ahl`, `luxr_ahl`,
+`ensemble_rank`, `ensemble_score`. The aggregation method (default `sum`;
+`rrf` etc. optional) is set by `analysis.aggregation`.
 
 ### `ablation_table.csv`
 
-One row per ablation cell (model subset × split × confidence). Columns
-include the ablation key, top-K accuracy, Kendall τ, etc.
+Workflow-level ablation table written by postprocess: one row per
+model-combination, with the receptor pool's top-K success under each
+ensemble subset. The per-set, figure-ready version is re-emitted under
+`results/<set.name>/ablation/` (see [`artifacts.md`](artifacts.md)).
 
 ### `done_pairs.json`
 
@@ -116,35 +125,10 @@ include the ablation key, top-K accuracy, Kendall τ, etc.
 already complete; can be passed to `--done-lookup` on subsequent
 `copal predict` runs to skip re-checking the filesystem.
 
-## Analysis outputs (`results/`)
+## Analysis outputs (`results/<set.name>/`)
 
-### `ranking_performance/`
-
-`ranking_performance_conf<K>.csv`: top-K accuracy, Kendall τ, Spearman ρ
-per model + ensemble.
-
-### `full_rankings/`
-
-`all_splits.csv` — per-receptor ranked ligand list.
-`<MODEL>.xlsx` — Excel workbooks per model (one sheet per receptor with
-predicted vs. true ranking).
-
-### `ablation/`
-
-Filtered, re-formatted ablation tables for figure consumption.
-
-### `chemical_similarity/` (requires RDKit)
-
-`chemical_similarity_conf<K>.csv` — MCS / Morgan-fingerprint similarity
-between predicted top-1 and ground-truth ligand, per RefAHL confidence
-stratum.
-
-### `acyl_moiety/`
-
-Acyl-chain-length match diagnostics.
-
-### `mpkt/`
-
-Per-receptor ranked tables formatted for the mpKT chemoinformatic
-follow-up analyses.
+`copal analyze` emits seven artifact groups; `copal full-ranking` adds the
+stylized `.xlsx` workbooks. Each group's files, columns, and interpretation
+are documented in **[`artifacts.md`](artifacts.md)** — the authoritative
+reference for analysis outputs.
 

@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# DEPRECATED. Targets the pre-Hydra `copal analyze --labels ...` CLI and the
+# old per-confidence `curated_conf{N}_no_leakage.csv` layout, both superseded.
+# Retained for reference only; not maintained. For the current workflow see
+# docs/reproduce_paper.md.
+#
 # Reproduce the COPAL paper analysis from the bundled predictions table,
 # emitting the *extended* layout (per-conf no-leakage variants for conf
 # {1,2,3}; mpKT pooled across conf 1+2+3; ablation on conf 1+2+3).

@@ -63,7 +63,7 @@ def apply_global_suffix_exclusion(labels_df: pd.DataFrame) -> pd.DataFrame:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="RALPH BLAST predictor: BLASTP + aggregate -> full_rankings & ranking_performance")
-    parser.add_argument("--benchmark-csv", type=Path, required=True, help="Path to benchmark_data_all_corrected.csv")
+    parser.add_argument("--benchmark-csv", type=Path, required=True, help="Path to paper_luxrs.csv (labels)")
     parser.add_argument("--ralph-database", type=Path, required=True, help="Path to RALPH database dir (contains ralph_scores.csv, ralph_db)")
     parser.add_argument("--ligands-path", type=Path, required=True, help="Path to ligands CSV (AHLid, abbreviation, subcategory)")
     parser.add_argument("--output-root", type=Path, required=True, help="Root for full_rankings/ and ranking_performance/")

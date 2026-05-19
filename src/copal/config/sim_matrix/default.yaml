@@ -1,0 +1,2 @@
+method: mcs_order        # one of mcs_order, mcs_any, mcs_penalized
+out: ${paths.data_root}/chem_sim_matrices/${sim_matrix.method}.csv

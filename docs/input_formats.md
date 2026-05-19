@@ -67,10 +67,11 @@ performance metrics:
 | `split` | Cohort label (`RefAHL`, `wetlabexp`, `solo`, …). |
 | `refahl_confidence_rating` | 1 / 2 / 3 confidence tier of the label. |
 
-The benchmark file shipped at `data/benchmark_data_all_corrected.csv`
-illustrates the full schema.
+The benchmark file shipped at `data/paper_luxrs.csv` illustrates the full
+schema.
 
 ## Output schemas
 
-For the column meanings of every CSV produced by `copal analyze`, see
-[`data_dictionary.md`](data_dictionary.md).
+For the column meanings of every CSV produced by `copal analyze` and
+`copal full-ranking`, see [`artifacts.md`](artifacts.md). For input and
+intermediate file schemas, see [`data_dictionary.md`](data_dictionary.md).

@@ -1,7 +1,7 @@
 name: refAHL_conf1
 description: "RefAHL confidence 1 only; no no-leakage filter."
-labels_path: ${paths.data_root}/benchmark_data_all_corrected.csv
-ligands_path: ${paths.data_root}/Final_confirmed_ligands_58_annotated.csv
+labels_path: ${paths.data_root}/paper_luxrs.csv
+ligands_path: ${paths.data_root}/curated_ligands_annotated.csv
 filter:
   splits: ["RefAHL"]
   confidences: [1]

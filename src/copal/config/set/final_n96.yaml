@@ -1,0 +1,14 @@
+name: final_n96
+description: "RefAHL conf {1,2,3}, no-leakage CSV union, replicate/litter suffixes dropped, Vib_001c excluded (N=96)."
+labels_path: ${paths.data_root}/paper_luxrs.csv
+ligands_path: ${paths.data_root}/curated_ligands_annotated.csv
+filter:
+  splits: ["RefAHL"]               # case-insensitive; [] / null = no split filter
+  confidences: [1, 2, 3]           # [] / null = no confidence filter
+  no_leakage_csvs:                 # [] / null = no leakage filter
+    - ${paths.data_root}/curated_luxR_RefAHL_no_leakage.csv
+  # The published benchmark set. Extends refAHL_all_conf_no_leakage (N=97) by
+  # also excluding Vib_001c -- a known problematic entry held out of the paper
+  # benchmark -- which brings the count to exactly N=96. The suffix matcher is
+  # case-insensitive on LuxR_name; the literal "Vib_001c" matches that one row.
+  exclude_suffixes: ["LONG", "SHORT", "MED", "_R1", "_R2", "Vib_001c"]

@@ -110,33 +110,118 @@ Use `--dry-run` (either executor) to write the schedule + inputs +
 
 ## 3. Rank the predictions
 
-### Prediction-only mode (no ground truth)
+First collect the raw model outputs into a hierarchical store:
 
 ```bash
 uv run copal organize --pred-dir ./run/outs --dst-dir ./run/store
-uv run copal analyze \
-    --workflow-dir ./run/workflow \
-    --output-root  ./run/results \
-    --labels       my_proteins.csv \
-    --ligands      my_ligands.csv \
-    --basepath     ./run/store/all
 ```
 
-You'll get per-receptor ranked ligand lists (`ranking_performance/…`,
-`full_rankings/…`) computed from each model's confidence scores plus an
-ensemble.
+Ranking is then done with one of two subcommands, **both Hydra-driven** —
+you select a benchmark *set* and override config leaves with `key=value`
+syntax. There are no `--flags`.
 
-### Benchmark mode (with ground-truth labels)
+### `copal full-ranking` — label-free ranking (your own data)
 
-If your `labels` CSV has a `true_ahl_abbrev` column (or your equivalent
-"correct ligand" column), `analyze` additionally computes top-K accuracy,
-Kendall τ / Spearman ρ, ablation tables, and chemical-similarity stats —
-exactly as in the paper.
+If you have no curated ground truth, `copal full-ranking set=inference`
+ranks every ligand per receptor using each model's confidence score and an
+ensemble, and emits stylized `.xlsx` workbooks:
 
-To replicate the paper benchmark numbers, see
-[`REPRODUCE.md`](REPRODUCE.md).
+```bash
+uv run copal full-ranking set=inference
+```
 
-## 4. Optional: filter by sequence similarity
+Output: `results/inference/full_rankings/{AF3,Boltz2,Boltz2Affinity,RF3,ENSEMBLE}.xlsx`
+plus `full_rankings.csv` (the programmatic wide-form table). See Section 5.
+
+### `copal analyze` — benchmark analysis (with ground-truth labels)
+
+When the selected set's labels CSV carries cognate-ligand ground truth,
+`copal analyze` computes top-K accuracy, Kendall τ, ablation tables,
+chemical-similarity, and per-model score-vs-rank correlations:
+
+```bash
+uv run copal analyze set=refAHL_all_conf_no_leakage
+```
+
+`copal analyze` **requires** a non-empty labelled set — it exits with an
+error on a set with no ground truth. For label-free data, use
+`copal full-ranking set=inference` instead.
+
+Artifacts land under `<paths.output_root>/<set.name>/` in seven groups:
+`ranking_performance/`, `mpkt/`, `acyl_moiety/`, `chemical_similarity/`,
+`score_vs_rank/`, `full_rankings/`, `ablation/`. Each is documented in
+[`docs/artifacts.md`](docs/artifacts.md).
+
+To reproduce the paper benchmark numbers, see
+[`docs/reproduce_paper.md`](docs/reproduce_paper.md).
+
+## 4. Benchmark sets
+
+A *set* is a Hydra config group under `src/copal/config/set/*.yaml`. Each
+set resolves to a filtered view of a labels CSV and declares `labels_path`,
+`ligands_path`, and a `filter` block with five independent axes:
+
+| Filter axis | Effect (empty / missing = no filter) |
+| ----------- | ------------------------------------ |
+| `splits` | Keep only rows in these split labels (case-insensitive). |
+| `confidences` | Keep only these confidence tiers (1 / 2 / 3). |
+| `no_leakage_csvs` | Keep only LuxRs present in the union of these curated CSVs. |
+| `exclude_suffixes` | Drop LuxRs whose name ends with any of these (case-insensitive). |
+| `include_names` | Keep **only** these LuxRs — a case-insensitive allowlist. |
+
+Select a set with `set=<name>`; override one leaf with Hydra list syntax,
+e.g. `'set.filter.confidences=[1,2]'`. Shipped sets:
+
+| Set | What it is |
+| --- | ---------- |
+| `refAHL_all_conf_no_leakage` | Default. RefAHL, confidence {1,2,3}, no-leakage union, replicate/litter suffixes dropped. |
+| `refAHL_all_conf` | RefAHL, all confidences, no leakage filter. |
+| `refAHL_conf1` / `_conf2` / `_conf3` | RefAHL, a single confidence tier. |
+| `refAHL_conf1_no_leakage` | RefAHL, confidence 1, no-leakage filtered. |
+| `final_n96` | The published benchmark set (N=96): `refAHL_all_conf_no_leakage` minus `Vib_001c`. |
+| `paper_case_studies` | Hand-picked LuxRs for the paper case studies (`include_names` allowlist). |
+| `all_data` | No filters — every row in the labels CSV. |
+| `inference` | Label-free mode: `labels_path`/`ligands_path` are null; used by `copal full-ranking`. |
+
+`set.name` controls the output subdirectory, so you can fork a run without
+editing a YAML: `copal analyze set=final_n96 set.name=final_n96_variant`.
+
+## 5. `copal full-ranking` — stylized ranking workbooks
+
+Emits one `.xlsx` workbook per model (`AF3`, `Boltz2`, `Boltz2Affinity`,
+`RF3`) plus `ENSEMBLE`, with the true-AHL rank cell highlighted yellow and
+the mpKT column shaded orange (< 0.3) / green (≥ 0.3) — alongside the
+programmatic `full_rankings.csv`.
+
+```bash
+uv run copal full-ranking set=final_n96     # benchmark: uses labels + ligand metadata
+uv run copal full-ranking set=inference     # inference: no labels needed
+```
+
+In `set=inference` mode there is no ground truth, so the yellow highlight
+is absent and the meta columns are blank — the rankings and mpKT colouring
+still render.
+
+## 6. `copal sim-matrix` — precomputed ligand-similarity matrices
+
+`copal analyze`'s `chemical_similarity` artifact compares predicted ligands
+to the true ligand by maximum-common-substructure (MCS) similarity.
+Computing MCS on the fly is slow, so `copal sim-matrix` precomputes the full
+pairwise matrix once:
+
+```bash
+uv run copal sim-matrix sim_matrix.method=mcs_penalized
+```
+
+`sim_matrix.method` selects the similarity definition — `mcs_order`,
+`mcs_any`, or `mcs_penalized` (see [`docs/artifacts.md`](docs/artifacts.md)
+for the differences). The matrix is written to
+`data/chem_sim_matrices/<method>.csv`. Feed it back to analysis with
+`copal analyze … analysis.chem_sim_matrix=data/chem_sim_matrices/mcs_penalized.csv`;
+if that override is omitted, `copal analyze` falls back to on-the-fly
+`mcs_order` computation.
+
+## 7. Optional: filter by sequence similarity
 
 To exclude query sequences that "leak" from the test set into a known
 reference set (e.g. PDB structures), use:
@@ -155,7 +240,9 @@ queries CSV (`true_ahl_abbrev`) and the references CSV have ligand
 annotations, "leakage" is defined as
 `(identity ≥ threshold) AND (same cognate ligand)`.
 
-## 5. Common knobs
+## 8. Common knobs
+
+### `copal predict` flags
 
 | Flag | Default | Effect |
 | ---- | ------- | ------ |
@@ -168,3 +255,19 @@ annotations, "leakage" is defined as
 | `--skip-done-check` | off | Skip the `outs/` scan (faster, but doesn't resume). |
 | `--redo-schedule` | off | Force-rebuild `scheduled_ensemble.csv`. |
 | `--done-lookup PATH` | none | JSON `{ "RECEPTOR_LIGAND": ["af3", "boltz2"] }` of pairs to mark already-done. |
+
+### `copal analyze` / `full-ranking` Hydra overrides
+
+These are `key=value` config overrides, not `--flags`.
+
+| Override | Default | Effect |
+| -------- | ------- | ------ |
+| `set=<name>` | `refAHL_all_conf_no_leakage` | Which benchmark set (see Section 4). |
+| `set.name=<custom>` | the set's own name | Rename the output subdirectory. |
+| `analysis.aggregation=<m>` | `sum` | Ensemble aggregation. `rrf` (reciprocal rank fusion) is the main alternative; also `mean`, `median`, `min`, `max`. |
+| `analysis.rrf_k=N` | 60 | RRF constant (only relevant when `aggregation=rrf`). |
+| `analysis.chem_sim_matrix=<path>` | null | Precomputed ligand-similarity matrix; null = on-the-fly `mcs_order`. |
+| `analysis.skip.ablation=true` | false | Skip the (slow) model-combination ablation. |
+| `paths.workflow_dir=<dir>` | `outputs_official_workflow` | Where `per_model_rankings.csv` + `ensemble_rankings.csv` are read from. |
+| `paths.output_root=<dir>` | `<workflow_dir>/results` | Where artifact groups are written. |
+| `sim_matrix.method=<m>` | `mcs_order` | (`copal sim-matrix` only) similarity method. |

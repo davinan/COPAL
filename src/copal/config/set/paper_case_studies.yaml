@@ -1,0 +1,18 @@
+name: paper_case_studies
+description: "Hand-picked LuxRs for paper case studies (case-insensitive name match)."
+labels_path: ${paths.data_root}/paper_luxrs.csv
+ligands_path: ${paths.data_root}/curated_ligands_annotated.csv
+filter:
+  # Explicit allowlist; suffix/split/confidence/leakage filters intentionally disabled.
+  include_names:
+    - NJ3_R1
+    - Pse_001_3var
+    - Rps_TuxR
+    - So_1110
+    - So_1125
+    - PipR_DC3000
+    - PipR_GM79
+  splits: []
+  confidences: []
+  no_leakage_csvs: []
+  exclude_suffixes: []

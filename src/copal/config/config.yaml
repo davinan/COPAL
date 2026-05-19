@@ -2,6 +2,7 @@ defaults:
   - set: refAHL_all_conf_no_leakage
   - paths: repo
   - analysis: default
+  - sim_matrix: default
   - _self_
 
 hydra:

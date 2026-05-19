@@ -3,6 +3,7 @@ rrf_k: 60
 af3_iptm_source: json
 expected_ligand_count: null
 per_model_split: ["AF3", "Boltz2", "Boltz2Affinity", "RF3"]
+chem_sim_matrix: null              # path to a precomputed pairwise sim CSV; if null, fall back to on-the-fly mcs_order
 skip:
   collect: true                    # default: don't re-collect raw predictions
   postprocess: true                # default: assume per_model_rankings.csv exists

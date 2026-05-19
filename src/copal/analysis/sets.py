@@ -29,6 +29,7 @@ class BenchmarkSetSpec:
     confidences: tuple[int, ...] = ()
     no_leakage_csvs: tuple[Path, ...] = ()
     exclude_suffixes: tuple[str, ...] = ()
+    include_names: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -88,6 +89,17 @@ def _apply_leakage_filter(
     return labels[labels["LuxR_name"].isin(keep)]
 
 
+def _apply_include_names_filter(
+    labels: pd.DataFrame, names: Iterable[str]
+) -> pd.DataFrame:
+    targets = [n for n in (names or ()) if n]
+    if not targets:
+        return labels
+    keep = {str(n).upper() for n in targets}
+    upper = labels["LuxR_name"].astype(str).str.upper()
+    return labels[upper.isin(keep)]
+
+
 def _apply_suffix_filter(
     labels: pd.DataFrame, suffixes: Iterable[str]
 ) -> pd.DataFrame:
@@ -126,24 +138,35 @@ def _normalize_ligands(ligands_raw: pd.DataFrame) -> pd.DataFrame:
 
 def load_set(
     spec: BenchmarkSetSpec,
-    labels_path: Path,
-    ligands_path: Path,
+    labels_path: Path | None,
+    ligands_path: Path | None,
 ) -> BenchmarkSet:
-    """Resolve a `BenchmarkSetSpec` into a `BenchmarkSet` by reading + filtering CSVs."""
-    labels_raw = pd.read_csv(labels_path)
-    ligands_raw = pd.read_csv(ligands_path)
+    """Resolve a `BenchmarkSetSpec` into a `BenchmarkSet` by reading + filtering CSVs.
 
-    labels = _normalize_labels_only(labels_raw)
-    ligands = _normalize_ligands(ligands_raw)
+    Either path may be ``None`` to signal inference mode for that axis: the
+    corresponding DataFrame is returned empty with the expected columns, and
+    the caller (typically `run_full_ranking_for_set`) synthesizes a minimal
+    view from the rankings themselves.
+    """
+    if labels_path is None:
+        labels = pd.DataFrame(
+            columns=["LuxR_name", "split", "confidence", "true_ahl_id", "true_ahl_abbrev"]
+        )
+    else:
+        labels = _normalize_labels_only(pd.read_csv(labels_path))
+        labels = _apply_suffix_filter(labels, spec.exclude_suffixes)
+        labels = _apply_split_filter(labels, spec.splits)
+        labels = _apply_confidence_filter(labels, spec.confidences)
+        labels = _apply_leakage_filter(labels, spec.no_leakage_csvs)
+        labels = _apply_include_names_filter(labels, spec.include_names)
+        labels = labels.drop_duplicates(
+            subset=["LuxR_name", "split", "confidence"]
+        ).reset_index(drop=True)
 
-    labels = _apply_suffix_filter(labels, spec.exclude_suffixes)
-    labels = _apply_split_filter(labels, spec.splits)
-    labels = _apply_confidence_filter(labels, spec.confidences)
-    labels = _apply_leakage_filter(labels, spec.no_leakage_csvs)
-
-    labels = labels.drop_duplicates(
-        subset=["LuxR_name", "split", "confidence"]
-    ).reset_index(drop=True)
+    if ligands_path is None:
+        ligands = pd.DataFrame(columns=["AHLid", "abbreviation", "subcategory"])
+    else:
+        ligands = _normalize_ligands(pd.read_csv(ligands_path))
 
     name_lookup = frozenset(labels["LuxR_name"].astype(str).tolist())
     provenance: dict[str, Any] = {
@@ -151,8 +174,9 @@ def load_set(
         "confidences": list(spec.confidences),
         "no_leakage_csvs": [str(p) for p in spec.no_leakage_csvs],
         "exclude_suffixes": list(spec.exclude_suffixes),
-        "labels_path": str(labels_path),
-        "ligands_path": str(ligands_path),
+        "include_names": list(spec.include_names),
+        "labels_path": str(labels_path) if labels_path is not None else None,
+        "ligands_path": str(ligands_path) if ligands_path is not None else None,
         "n_rows": int(len(labels)),
         "n_luxrs": int(labels["LuxR_name"].nunique()) if not labels.empty else 0,
     }
@@ -193,4 +217,5 @@ def from_omega(cfg_set) -> BenchmarkSetSpec:
         confidences=confidences,
         no_leakage_csvs=no_leakage,
         exclude_suffixes=_seq("exclude_suffixes"),
+        include_names=_seq("include_names"),
     )
