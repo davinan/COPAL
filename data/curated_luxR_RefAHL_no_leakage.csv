@@ -1,0 +1,105 @@
+refahl_id,cognate_ligand,max_identity_to_any_pdb,closest_pdb,closest_pdb_ligand,reason
+Bra_001,IV,0.2793,3QP1,C6,<40% identity
+Bra_002a,Cinn,0.2706,2UV0,3OC12,<40% identity
+Dino_001,"C18:2, 2E 11Z",0.2381,1L3L,3OC8,<40% identity
+Mes_001a,"C12:2, 2E 4E",0.2892,2UV0,3OC12,<40% identity
+Mes_002,3OC6,0.3016,2UV0,3OC12,<40% identity
+MethA_006a,"3OHC12:1, 5Z",0.2941,3SZT,3OC12,<40% identity
+Nitrob_001a,C10:1,0.3028,2UV0,3OC12,<40% identity
+Pha_001,3OHC10,0.2642,8B4A,C4,<40% identity
+Prost_001,PA,0.2913,8B4A,C4,<40% identity
+Rhi_001a,"3OHC14:1, 7Z",0.2644,5L09,3OC6,<40% identity
+Rhi_001b,3OHC14:1,0.2683,3SZT,3OC12,<40% identity
+Rhi_002,C6,0.2738,8B4A,C4,<40% identity
+Rhi_003,3OHC8,0.2746,3SZT,3OC12,<40% identity
+Rhobct_002,C16,0.2324,8B4A,C4,<40% identity
+Rps_001,pC,0.2923,3SZT,3OC12,<40% identity
+Sin_001,3OC16:1,0.2759,2UV0,3OC12,<40% identity
+Burk_001a,C8,0.3633,8B4A,C4,<40% identity
+Burk_001b,C8,0.3171,3SZT,3OC12,<40% identity
+Burk_001c,C8,0.3622,8B4A,C4,<40% identity
+Burk_001d,C8,0.3592,8B4A,C4,<40% identity
+Burk_001e,C8,0.3633,8B4A,C4,<40% identity
+Burk_002,3OHC10,0.3824,3SZT,3OC12,<40% identity
+Burk_003,3OHC8,0.3016,3SZT,3OC12,<40% identity
+Burk_004b,3OHC8,0.263,3SZT,3OC12,<40% identity
+Burk_006b,3OC14,0.3917,2UV0,3OC12,<40% identity
+Ral_002,3OHC12,0.3603,4Y15,3OC6,<40% identity
+Aci_001c,3OHC12,0.3389,3SZT,3OC12,<40% identity
+Aer_001a,C4,0.2751,3SZT,3OC12,<40% identity
+MethG_001,3OHC10,0.3882,3SZT,3OC12,<40% identity
+Pse_003,3OC6,0.3218,5L09,3OC6,<40% identity
+Pse_004a_correct,3OHC6,0.3811,8B4A,C4,<40% identity
+Pse_004b,3OHC6,0.2934,8B4A,C4,<40% identity
+Pse_006,3OC10,0.4024,2UV0,3OC12,≥40% but different ligand
+Pse_007,C10,0.5148,3SZT,3OC12,≥40% but different ligand
+Pse_008,3OC10,0.3967,2UV0,3OC12,<40% identity
+Ser_001a,C4,0.4722,5L09,3OC6,≥40% but different ligand
+Ser_001b,C4,0.4841,5L09,3OC6,≥40% but different ligand
+Ser_001d,C6,0.4722,5L09,3OC6,≥40% but different ligand
+Shew_001,C8,0.2821,4Y15,3OC6,<40% identity
+Sod_001,3OC6,0.3944,5L09,3OC6,<40% identity
+Tere_001,C10,0.2944,2UV0,3OC12,<40% identity
+Vib_001a,3OC6,0.2659,4Y15,3OC6,<40% identity
+Vib_001b,3OC6,0.2786,5L09,3OC6,<40% identity
+Vib_001c,3OC6,0.2868,2UV0,3OC12,<40% identity
+
+Bra_002b,Cinn,0.2669,2UV0,3OC12,<40% identity
+Mes_003,C6,0.2769,8B4A,C4,<40% identity
+Mes_004,C12,0.2698,2UV0,3OC12,<40% identity
+MethA_003,C12,0.2946,2UV0,3OC12,<40% identity
+MethA_006c,3OHC12:1,0.3059,3SZT,3OC12,<40% identity
+Pand_001,C8,0.3043,4Y15,3OC6,<40% identity
+Ser_001c,C4,0.4786,5L09,3OC6,≥40% but different ligand
+Clone_00001,C12,0.3029,3QP1,C6,<40% identity
+Clone_00002,C12,0.2932,3SZT,3OC12,<40% identity
+Clone_00003,3OHC12,0.2469,3SZT,3OC12,<40% identity
+Clone_00004_R1,C6,0.29,8B4A,C4,<40% identity
+Clone_00004_R2,C6,0.2546,4Y15,3OC6,<40% identity
+Clone_00005,C6,0.2984,2Q0O,3OC8,<40% identity
+Clone_00007,C10,0.2689,3SZT,3OC12,<40% identity
+Clone_00009,3OC6,0.3143,2Q0O,3OC8,<40% identity
+Clone_00011,C8,0.2809,3QP1,C6,<40% identity
+Clone_00012_R1,C12,0.2551,8B4A,C4,<40% identity
+Clone_00012_R2,C12,0.1953,1L3L,3OC8,<40% identity
+Nitrosp_001,C8,0.2568,3QP1,C6,<40% identity
+Nitrosp_002,C12,0.3074,3QP1,C6,<40% identity
+Acidith_001,3OHC14,0.3827,8B4A,C4,<40% identity
+Mes_001b,C12:2,0.28,2UV0,3OC12,<40% identity
+MethA_001a,"C14:2, 2E 7Z",0.2389,8B4A,C4,<40% identity
+MethA_001c,C14:1,0.2752,2Q0O,3OC8,<40% identity
+MethA_002,C8,0.2601,3QP1,C6,<40% identity
+MethA_004,3OHC8,0.2701,2Q0O,3OC8,<40% identity
+MethA_005,3OC8,0.298,2Q0O,3OC8,<40% identity
+Nitrob_001b,C10:1,0.2857,2UV0,3OC12,<40% identity
+Para_001,C16,0.2311,1L3L,3OC8,<40% identity
+Pha_002,3OC16:1,0.2672,8B4A,C4,<40% identity
+Rhobct_001_R1,"C14:1, 7Z",0.2868,8B4A,C4,<40% identity
+Rhobct_001_R2,"C14:1, 7Z",0.2581,8B4A,C4,<40% identity
+Rhbtales_001,3OHC12:1,0.2634,8B4A,C4,<40% identity
+Rhbtales_002,C8,0.2463,8B4A,C4,<40% identity
+Rps_002,IV,0.2648,3SZT,3OC12,<40% identity
+Rhosp_001,3OHC8,0.2878,2Q0O,3OC8,<40% identity
+Acidvx_001,3OHC10,0.3714,3SZT,3OC12,<40% identity
+Burk_001g,C8,0.3518,8B4A,C4,<40% identity
+Burk_004a,3OHC8,0.2459,3SZT,3OC12,<40% identity
+Burk_005,C10,0.4458,3SZT,3OC12,≥40% but different ligand
+Burk_006a,3OHC14,0.3983,2UV0,3OC12,<40% identity
+Burk_007,3OC10,0.4,2UV0,3OC12,≥40% but different ligand
+Coll_001a,3OHC8,0.3544,3SZT,3OC12,<40% identity
+Coll_001b,3OHC8,0.3544,3SZT,3OC12,<40% identity
+Nitroso_001,3OHC14,0.3532,2UV0,3OC12,<40% identity
+Ral_001,C8,0.3563,4Y15,3OC6,<40% identity
+Aci_001b,3OHC12,0.3347,3SZT,3OC12,<40% identity
+Aer_001c,C4,0.2765,3SZT,3OC12,<40% identity
+Ced_001,C4,0.379,5L09,3OC6,<40% identity
+Citro_001a,C4,0.3918,5L09,3OC6,<40% identity
+Citro_001b,C4,0.3714,5L09,3OC6,<40% identity
+Ent_001,C4,0.3831,5L09,3OC6,<40% identity
+Pan_001,C4,0.3959,5L09,3OC6,<40% identity
+Pect_001b,3OC8,0.496,5L09,3OC6,≥40% but different ligand
+Pse_004c,3OHC6,0.2934,8B4A,C4,<40% identity
+Pse_004d,3OHC6,0.3868,8B4A,C4,<40% identity
+Pse_009,3OC6,0.3144,5L09,3OC6,<40% identity
+Vib_002a,3OC10,0.3008,2UV0,3OC12,<40% identity
+Vib_002b,3OC10,0.3307,2UV0,3OC12,<40% identity

@@ -1,38 +1,9 @@
 # COPAL
 
-**Co-folding ranking of protein–ligand pairs across AlphaFold 3, Boltz2, and RosettaFold3.**
+Combining Ordered Predictions of Audited Ligands
 
-COPAL takes a CSV of protein receptors and a CSV of small-molecule ligands,
-runs each receptor × ligand pair through a configurable subset of
-{AlphaFold 3, Boltz2, RosettaFold3} on a SLURM cluster, and ranks the
-ligands per receptor using an ensemble of confidence-derived scores.
+![COPAL pipeline](docs/copal_image.png)
 
-This repository accompanies the paper *“[paper title TBA]”* (Nakajima An et al.).
-
-```
-                  receptors.csv         ligands.csv
-                       │                     │
-                       ▼                     ▼
-                       └──────► copal predict ◄──────┐
-                                  │                  │
-              ┌───────────────────┼───────────────────┐
-              ▼                   ▼                   ▼
-            AF3 JSON          Boltz2 YAML         RF3 JSON
-              │                   │                   │
-              └─── SLURM array job (per chunk) ──────┘
-                                  │
-                                  ▼
-                       inputs/, outs/ (predictions)
-                                  │
-                                  ▼
-                            copal analyze
-                                  │
-                       ┌──────────┴──────────┐
-                       ▼                     ▼
-              prediction-only        + benchmark mode
-              (rankings.csv …)       (top-K, Kendall τ,
-                                      ablation, etc.)
-```
 
 ## Quickstart
 
@@ -157,12 +128,6 @@ runtime carry their own licenses — see [`NOTICE`](NOTICE).
 
 ## Citation
 
+TBD
 ```bibtex
-@article{copal2026,
-  title   = {<TBA>},
-  author  = {Nakajima An, Davi and ...},
-  journal = {<TBA>},
-  year    = {2026},
-  doi     = {<TBA>}
-}
 ```

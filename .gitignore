@@ -61,3 +61,5 @@ docs/superpowers/
 .mcp.json
 .ripgreprc
 .gitmodules
+
+deprecated/
