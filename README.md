@@ -11,8 +11,6 @@ runs each receptor × ligand pair through a configurable subset of
 {AlphaFold 3, Boltz2, RosettaFold3} on a SLURM cluster, and ranks the
 ligands per receptor using an ensemble of confidence-derived scores.
 
-This repository accompanies the paper *“[paper title TBA]”* (Nakajima An et al.).
-
 ```
                   receptors.csv         ligands.csv
                        │                     │
