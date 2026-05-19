@@ -3,6 +3,8 @@
 Subcommands:
     predict       — schedule + emit AF3/Boltz2/RF3 inputs and SLURM script
     analyze       — collect predictions, postprocess, generate analysis CSVs
+    full-ranking  — emit stylized per-model + ensemble .xlsx files
+    sim-matrix    — precompute pairwise ligand chemical-similarity matrix
     seqid-filter  — sequence-identity / leakage filter (BLAST + global align)
     organize      — move raw model outputs into a hierarchical store
 """
@@ -26,7 +28,7 @@ def predict(
     ligands: Path = typer.Option(..., "--ligands", "-l", exists=True, dir_okay=False,
                                  help="CSV with at least columns: ligand_id, smiles."),
     out_dir: Path = typer.Option(..., "--out-dir", "-o", file_okay=False,
-                                 help="Working directory for inputs/, sarray/, matches/."),
+                                 help="Working directory for inputs/, sarray/, outs/."),
     models: str = typer.Option("af3,boltz2,rf3", "--models",
                                help="Comma-separated models to run."),
     batch_size: int = typer.Option(20, "--batch-size",
@@ -84,6 +86,57 @@ def analyze(ctx: typer.Context) -> None:
     from copal.analysis.run import run_with_overrides
 
     run_with_overrides(ctx.args)
+
+
+@app.command(
+    "sim-matrix",
+    context_settings={
+        "allow_extra_args": True,
+        "ignore_unknown_options": True,
+    },
+)
+def sim_matrix(ctx: typer.Context) -> None:
+    """Precompute a pairwise ligand-similarity matrix for the configured pool.
+
+    Methods are defined in src/copal/analysis/chem_sim.py:METHODS:
+
+        copal sim-matrix method=mcs_order
+        copal sim-matrix method=mcs_any
+        copal sim-matrix method=mcs_penalized
+
+    By default writes to ${paths.data_root}/chem_sim_matrices/<method>.csv;
+    override with sim_matrix.out=/path/to/your.csv. The set's ligand pool
+    (set.ligands_path) defines the rows/columns.
+    """
+    from copal.analysis.run import run_sim_matrix_with_overrides
+
+    run_sim_matrix_with_overrides(ctx.args)
+
+
+@app.command(
+    "full-ranking",
+    context_settings={
+        "allow_extra_args": True,
+        "ignore_unknown_options": True,
+    },
+)
+def full_ranking(ctx: typer.Context) -> None:
+    """Emit stylized per-model + ensemble ranking .xlsx files (+ full_rankings.csv).
+
+    Reads per_model_rankings.csv + ensemble_rankings.csv from ``workflow_dir``
+    and writes ``results/<set.name>/full_rankings/``. Two modes:
+
+        copal full-ranking set=final_n96    # benchmark: uses labels + ligands
+        copal full-ranking set=inference    # inference: no labels needed
+
+    Same Hydra override syntax as ``copal analyze``. In benchmark mode, the
+    yellow fill highlights each row's true-AHL rank cell; in inference mode
+    no yellow fill fires (no true_ahl_id), but mpKT-based orange/green
+    coloring still renders.
+    """
+    from copal.analysis.run import run_full_ranking_with_overrides
+
+    run_full_ranking_with_overrides(ctx.args)
 
 
 @app.command("seqid-filter")

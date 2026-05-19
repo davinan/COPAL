@@ -71,9 +71,9 @@ Or directly:
 
 ```bash
 python run_ralph_blast.py \
-    --benchmark-csv ../../data/benchmark_data_all_corrected.csv \
+    --benchmark-csv ../../data/paper_luxrs.csv \
     --ralph-database ./ralph_database \
-    --ligands-path ../../data/Final_confirmed_ligands_58_annotated.csv \
+    --ligands-path ../../data/curated_ligands_annotated.csv \
     --output-root ./outputs/results \
     --workflow-dir ./workflow_ralph \
     --min-pident 30 \

@@ -812,9 +812,15 @@ def build_chemical_similarity(
     subset_labels: pd.DataFrame,
     ensemble_df: pd.DataFrame,
     ligands_df: pd.DataFrame,
+    sim_table: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    """Max MCS similarity to true AHL in top-1, top-3, top-6 ensemble predictions per LuxR."""
-    ahl_to_smiles = dict(zip(ligands_df["AHLid"], ligands_df[SMILES_COL]))
+    """Max chemical similarity to true AHL in top-1/3/5/6 ensemble predictions per LuxR.
+
+    If ``sim_table`` is provided (square AHLid-indexed DataFrame, e.g. produced
+    by ``copal sim-matrix``), scores come from O(1) lookup. Otherwise falls
+    back to on-the-fly ``mcs_similarity_smiles`` (the historical baseline
+    using bondCompare=CompareOrder).
+    """
     true_by_luxr = subset_labels[["LuxR_name", "true_ahl_id"]].drop_duplicates()
 
     top1 = ensemble_df[ensemble_df["ensemble_rank"] <= 1][["luxr", "ahl"]].copy()
@@ -822,18 +828,30 @@ def build_chemical_similarity(
     top5 = ensemble_df[ensemble_df["ensemble_rank"] <= 5][["luxr", "ahl"]].copy()
     top6 = ensemble_df[ensemble_df["ensemble_rank"] <= 6][["luxr", "ahl"]].copy()
 
+    if sim_table is not None:
+        def sim_score(a_id: str, b_id: str) -> float:
+            try:
+                return float(sim_table.loc[a_id, b_id])
+            except KeyError:
+                return float("nan")
+    else:
+        ahl_to_smiles = dict(zip(ligands_df["AHLid"], ligands_df[SMILES_COL]))
+
+        def sim_score(a_id: str, b_id: str) -> float:
+            sa = ahl_to_smiles.get(a_id)
+            sb = ahl_to_smiles.get(b_id)
+            if not isinstance(sa, str) or not isinstance(sb, str):
+                return float("nan")
+            return mcs_similarity_smiles(sa, sb)
+
     def max_mcs_for_luxr(
         luxr: str, true_ahl: str | None, topk_df: pd.DataFrame
     ) -> float:
         if true_ahl is None:
             return float("nan")
-        true_smiles = ahl_to_smiles.get(true_ahl)
-        if not isinstance(true_smiles, str):
-            return float("nan")
         scores: list[float] = []
         for pred in topk_df[topk_df["luxr"] == luxr]["ahl"].tolist():
-            pred_smiles = ahl_to_smiles.get(normalize_token(pred))
-            score = mcs_similarity_smiles(pred_smiles, true_smiles)
+            score = sim_score(normalize_token(pred), true_ahl)
             if pd.notna(score):
                 scores.append(float(score))
         return float(max(scores)) if scores else float("nan")
@@ -1160,6 +1178,96 @@ def build_mpkt_quartile_top6_success(mpkt_df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(recs).sort_values("mpkt_quartile").reset_index(drop=True)
 
 
+SCORE_COL_BY_MODEL: dict[str, str] = {
+    "AF3": "iptm",
+    "Boltz2": "iptm",
+    "Boltz2Affinity": "affinity_probability_binary",
+    "RF3": "iptm",
+}
+
+
+def build_score_vs_true_rank(
+    subset_labels: pd.DataFrame,
+    rankings_df: pd.DataFrame,
+    model_name: str,
+) -> pd.DataFrame:
+    """Per-LuxR (mean model score over the top-6 AHLs, rank of true AHL) for one model.
+
+    X column is the average of the model's confidence over its top-6 ranked AHL
+    predictions for the LuxR — a label-free "peak confidence" signal,
+    computable at inference. Column name is ``mean_top6_iptm`` for
+    AF3/Boltz2/RF3 and ``mean_top6_affinity_probability_binary`` for
+    Boltz2Affinity. Y column ``True AHL Ranking`` is the position of the
+    cognate AHL in this model's ranking (NaN when no ``true_ahl_id``).
+    """
+    score_col = SCORE_COL_BY_MODEL[model_name]
+    mean_col = f"mean_top6_{score_col}"
+    inv = {v: k for k, v in MODEL_NAME_MAP.items()}
+    model_key = inv[model_name]
+
+    model_rows = rankings_df[rankings_df["model"] == model_key]
+
+    means = (
+        model_rows[model_rows["rank"] <= 6]
+        .groupby("luxr")[score_col]
+        .mean()
+        .rename(mean_col)
+        .reset_index()
+        .rename(columns={"luxr": "LuxR_name"})
+    )
+
+    valid = subset_labels[subset_labels["true_ahl_id"].notna()][
+        ["LuxR_name", "true_ahl_id"]
+    ].drop_duplicates().copy()
+    valid["luxr_ahl"] = valid["LuxR_name"] + "_" + valid["true_ahl_id"]
+    true_rank = (
+        model_rows[["luxr_ahl", "rank"]]
+        .merge(valid[["LuxR_name", "luxr_ahl"]], on="luxr_ahl", how="inner")
+        [["LuxR_name", "rank"]]
+        .rename(columns={"rank": "True AHL Ranking"})
+    )
+
+    all_luxrs = subset_labels[["LuxR_name"]].drop_duplicates()
+    out = (
+        all_luxrs
+        .merge(means, on="LuxR_name", how="left")
+        .merge(true_rank, on="LuxR_name", how="left")
+    )
+    return out[["LuxR_name", mean_col, "True AHL Ranking"]].sort_values(
+        "LuxR_name"
+    ).reset_index(drop=True)
+
+
+def build_score_vs_rank_correlation(
+    tables: dict[str, pd.DataFrame],
+) -> pd.DataFrame:
+    """Per-model Spearman / Pearson / Kendall between mean-top6 score and True AHL Ranking."""
+    recs = []
+    for model_name, df in tables.items():
+        mean_col = f"mean_top6_{SCORE_COL_BY_MODEL[model_name]}"
+        sub = df.dropna(subset=[mean_col, "True AHL Ranking"])
+        n = len(sub)
+        rec = {
+            "model": model_name, "score_col": mean_col, "n": n,
+            "spearman_r": float("nan"), "spearman_p": float("nan"),
+            "pearson_r": float("nan"), "pearson_p": float("nan"),
+            "kendall_tau": float("nan"), "kendall_p": float("nan"),
+        }
+        if n >= 3:
+            x = sub[mean_col].astype(float).values
+            y = sub["True AHL Ranking"].astype(float).values
+            sp_r, sp_p = spearmanr(x, y)
+            pe_r, pe_p = pearsonr(x, y)
+            kt_tau, kt_p = kendalltau(x, y)
+            rec.update({
+                "spearman_r": float(sp_r), "spearman_p": float(sp_p),
+                "pearson_r": float(pe_r), "pearson_p": float(pe_p),
+                "kendall_tau": float(kt_tau), "kendall_p": float(kt_p),
+            })
+        recs.append(rec)
+    return pd.DataFrame(recs)
+
+
 def build_ablation_summary(ablation_table: pd.DataFrame) -> pd.DataFrame:
     """Summarize ablation by num_models: mean/std of top-5 and top-6 success rate, N."""
     df = ablation_table.copy()
@@ -1251,6 +1359,7 @@ def run_analysis_for_set(
     rrf_k: int = DEFAULT_RRF_K,
     per_model_split: tuple[str, ...] = ("AF3", "Boltz2", "Boltz2Affinity", "RF3"),
     skip_ablation: bool = False,
+    chem_sim_matrix_path: Path | None = None,
 ) -> None:
     """Produce every analysis artifact for ONE resolved benchmark set.
 
@@ -1292,6 +1401,7 @@ def run_analysis_for_set(
         "acyl_moiety": base / "acyl_moiety",
         "chemical_similarity": base / "chemical_similarity",
         "mpkt": base / "mpkt",
+        "score_vs_rank": base / "score_vs_rank",
         "full_rankings": base / "full_rankings",
         "ablation": base / "ablation",
     }
@@ -1318,8 +1428,19 @@ def run_analysis_for_set(
             dirs["acyl_moiety"] / f"acyl_moiety_{model_name}.csv",
         )
 
+    sim_table = None
+    if chem_sim_matrix_path is not None:
+        sim_path = Path(chem_sim_matrix_path)
+        if not sim_path.exists():
+            raise FileNotFoundError(
+                f"chem_sim_matrix path does not exist: {sim_path}. "
+                "Generate one with `copal sim-matrix method=<m>`."
+            )
+        sim_table = pd.read_csv(sim_path, index_col=0)
+        log.info("Loaded chem-sim matrix %s (shape=%s)", sim_path, sim_table.shape)
+
     write_results_csv(
-        build_chemical_similarity(labels, ensemble, ligands),
+        build_chemical_similarity(labels, ensemble, ligands, sim_table=sim_table),
         dirs["chemical_similarity"] / "chemical_similarity.csv",
     )
 
@@ -1347,6 +1468,17 @@ def run_analysis_for_set(
             bset.name, len(valid_rows),
         )
 
+    sr_tables: dict[str, pd.DataFrame] = {}
+    for model_name in per_model_split:
+        if model_name not in SCORE_COL_BY_MODEL:
+            continue
+        df = build_score_vs_true_rank(labels, rankings, model_name)
+        write_results_csv(df, dirs["score_vs_rank"] / f"{model_name}.csv")
+        sr_tables[model_name] = df
+    if sr_tables:
+        corr = build_score_vs_rank_correlation(sr_tables)
+        corr.to_csv(dirs["score_vs_rank"] / "correlation.csv", index=False)
+
     write_results_csv(
         build_full_rankings(labels, rankings, ensemble, ligands),
         dirs["full_rankings"] / "full_rankings.csv",
@@ -1373,6 +1505,105 @@ def run_analysis_for_set(
     log.info(
         "run_analysis_for_set complete: set=%r n_luxrs=%d out=%s",
         bset.name, bset.n_luxrs(), base,
+    )
+
+
+def run_full_ranking_for_set(
+    bset,
+    workflow_dir: Path,
+    output_root: Path,
+    aggregation: str = DEFAULT_AGGREGATION,
+    rrf_k: int = DEFAULT_RRF_K,
+    per_model_split: tuple[str, ...] = ("AF3", "Boltz2", "Boltz2Affinity", "RF3"),
+) -> None:
+    """Emit stylized per-model + ensemble ranking .xlsx files (and full_rankings.csv).
+
+    Reads the canonical per_model/ensemble CSVs from ``workflow_dir`` and writes:
+        output_root/<bset.name>/full_rankings/full_rankings.csv
+        output_root/<bset.name>/full_rankings/{AF3,Boltz2,Boltz2Affinity,RF3,ENSEMBLE}.xlsx
+
+    Works in benchmark mode (bset.labels / bset.ligands populated) and inference
+    mode (both empty — synthesized from rankings; yellow-fill on true AHL is
+    naturally skipped, mpKT-based orange/green coloring still renders).
+    """
+    import logging
+    log = logging.getLogger(__name__)
+
+    workflow_dir = Path(workflow_dir)
+    output_root = Path(output_root)
+    rankings_csv = workflow_dir / RANKINGS_CSV_NAME
+    ensemble_csv = workflow_dir / ENSEMBLE_CSV_NAME
+    if not rankings_csv.exists():
+        raise FileNotFoundError(f"Required rankings CSV missing: {rankings_csv}")
+    if not ensemble_csv.exists():
+        raise FileNotFoundError(f"Required ensemble CSV missing: {ensemble_csv}")
+
+    rankings = _normalize_rankings(pd.read_csv(rankings_csv))
+    ensemble = _normalize_ensemble(pd.read_csv(ensemble_csv))
+    if aggregation != DEFAULT_AGGREGATION:
+        log.info(
+            "Aggregation %r differs from cached default %r; re-deriving ensemble in memory.",
+            aggregation, DEFAULT_AGGREGATION,
+        )
+        ensemble = _derive_ensemble(rankings, aggregation, rrf_k)
+
+    if bset.labels.empty:
+        log.info("Inference mode: synthesizing labels from rankings (no true_ahl_id).")
+        labels = pd.DataFrame({
+            "LuxR_name": sorted(rankings["luxr"].astype(str).unique()),
+        })
+        labels["split"] = pd.NA
+        labels["confidence"] = pd.NA
+        labels["true_ahl_id"] = pd.NA
+        labels["true_ahl_abbrev"] = pd.NA
+    else:
+        labels = bset.labels
+
+    if bset.ligands.empty:
+        log.info("Inference mode: synthesizing ligands from rankings (abbreviation=AHLid).")
+        ahls = sorted(rankings["ahl"].astype(str).unique())
+        ligands = pd.DataFrame({
+            "AHLid": ahls,
+            "abbreviation": ahls,
+            "subcategory": pd.NA,
+        })
+    else:
+        ligands = bset.ligands
+
+    if labels.empty:
+        log.error("Set %r is empty after loading; nothing to write.", bset.name)
+        raise SystemExit(2)
+
+    full_dir = output_root / bset.name / "full_rankings"
+    full_dir.mkdir(parents=True, exist_ok=True)
+
+    # mpKT per LuxR (drives orange/green fill in the .xlsx). In inference mode
+    # ensemble_true is empty -> "Ensemble True AHL Ranking" column is all NaN.
+    lookup = build_true_rank_lookup(labels, rankings, ensemble)
+    ensemble_true = (
+        lookup[lookup["model_name"] == "Ensemble"][["LuxR_name", "true_rank"]]
+        .drop_duplicates()
+    )
+    mpkt_df = build_mpkt(labels, rankings, ensemble_true)
+
+    write_results_csv(
+        build_full_rankings(labels, rankings, ensemble, ligands),
+        full_dir / "full_rankings.csv",
+    )
+
+    excel_models: list[tuple[str, str | None]] = [
+        *((m, m.lower()) for m in per_model_split),
+        ("ENSEMBLE", None),
+    ]
+    for display_name, model_key in excel_models:
+        build_ranked_excel(
+            model_key, rankings, ensemble, labels, ligands, mpkt_df,
+            full_dir / f"{display_name}.xlsx",
+        )
+
+    log.info(
+        "run_full_ranking_for_set complete: set=%r n_luxrs=%d out=%s",
+        bset.name, int(labels["LuxR_name"].nunique()), full_dir,
     )
 
 

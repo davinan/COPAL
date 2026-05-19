@@ -20,6 +20,7 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
+from copal.io.schema import load_ligands_csv
 from copal.runner.sbatch import make_sbatch_file
 
 
@@ -124,7 +125,7 @@ class Manager(ABC):
             else pd.DataFrame(columns=[protein_name_col, "sequence", "msa_path"])
         )
         lig_df = (
-            pd.read_csv(ligand_csv)
+            load_ligands_csv(ligand_csv)        # alias-aware: AHLid/smi -> ligand_id/smiles
             if ligand_csv
             else pd.DataFrame(columns=[ligand_name_col, "smiles"])
         )

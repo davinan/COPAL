@@ -1,12 +1,14 @@
 name: refAHL_conf1_no_leakage
-description: "RefAHL confidence 1, intersected with curated_conf1_no_leakage.csv."
-labels_path: ${paths.data_root}/benchmark_data_all_corrected.csv
-ligands_path: ${paths.data_root}/Final_confirmed_ligands_58_annotated.csv
+description: "RefAHL confidence 1, intersected with the curated no-leakage LuxR set."
+labels_path: ${paths.data_root}/paper_luxrs.csv
+ligands_path: ${paths.data_root}/curated_ligands_annotated.csv
 filter:
   splits: ["RefAHL"]
   confidences: [1]
+  # curated_luxR_RefAHL_no_leakage.csv is the union across all confidence
+  # tiers; the confidences:[1] filter above narrows it to the conf-1 subset.
   no_leakage_csvs:
-    - ${paths.data_root}/curated_conf1_no_leakage.csv
+    - ${paths.data_root}/curated_luxR_RefAHL_no_leakage.csv
   # Legacy run_analysis_extended.sh drops "_R1"/"_R2" replicates from the
   # no-leakage subset; mirror that behavior here.
   exclude_suffixes: ["LONG", "SHORT", "MED", "_R1", "_R2"]

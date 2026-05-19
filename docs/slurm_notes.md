@@ -47,5 +47,8 @@ uv run copal organize --pred-dir run/outs --dst-dir run/store
 ```
 
 This migrates the per-model raw outputs into the hierarchical
-`<RECEPTOR>/{structures,confidences}/<name>/<model>/` store that
-`copal analyze --basepath run/store/all` expects.
+`<RECEPTOR>/{structures,confidences}/<name>/<model>/` store. That store is
+the input to the **collect** step, which builds `predictions.csv`
+(see [`../REPRODUCE.md`](../REPRODUCE.md) Path B). The Hydra-driven
+`copal analyze` then reads the postprocessed `per_model_rankings.csv` —
+it does not take a `--basepath` flag.

@@ -103,7 +103,8 @@ wrappers (see step 6).
 | `COPAL_AF3_SCRIPT` | `copal.runner.af3` | Override the AF3 wrapper script with your own copy. |
 | `COPAL_BOLTZ2_SCRIPT` | `copal.runner.boltz2` | Same, for Boltz2. |
 | `COPAL_RF3_SCRIPT` | `copal.runner.rf3` | Same, for RF3. |
-| `COPAL_POCKET_REF_CIF` | `copal.utils.pocket` | Override the reference CIF used for pocket-residue annotation. Defaults to `data/reference/4y17.cif`. |
+| `COPAL_POCKET_REF_CIF` | `copal.utils.pocket` | Reference CIF for the optional pocket-residue annotation utility. The built-in default path is `data/reference/4y17.cif`, which is **not shipped in the repo** — set this variable to your own CIF if you use pocket annotation. |
+| `COPAL_REPO_ROOT` | Hydra `paths` config (`config/paths/repo.yaml`) | Root the `copal analyze` / `full-ranking` / `sim-matrix` config paths resolve against. Defaults to the current working directory; **set it explicitly** when running these commands from anywhere other than the repo root (e.g. on a cluster), so `data/` and `outputs_official_workflow/` resolve correctly. |
 
 A `.env` style template:
 
@@ -116,6 +117,7 @@ export AF3_MODEL_DIR=/databases/alphafold  # dir containing af3.bin
 export BOLTZ2_BIN=$(which boltz)           # or a run_boltz.sh path
 export RF3_INSTALL=$HOME/src/foundry
 export RF3_CKPT=$RF3_INSTALL/rf3_latest.pt
+export COPAL_REPO_ROOT=$PWD                # so `copal analyze` resolves data/ + outputs/
 ```
 
 ## 3. AlphaFold 3
@@ -395,7 +397,7 @@ tar -xJf data/benchmark_msas.tar.xz -C data/benchmark_msas/
 ```
 
 Only needed if you want to re-run inference on the paper benchmark.
-The `msa_path` column in `data/benchmark_data_all_corrected.csv`
+The `msa_path` column in `data/paper_luxrs.csv`
 points at `data/benchmark_msas/<N>.a3m` (relative to the repo root),
 so run `copal` commands from there.
 
@@ -405,10 +407,12 @@ so run `copal` commands from there.
 uv run copal --help
 uv run copal predict --help
 uv run copal analyze --help
+uv run copal full-ranking --help
+uv run copal sim-matrix --help
 uv run python -c "import copal, copal.pipeline, copal.analysis"
 ```
 
-If those four commands succeed, the local install is ready.
+If those commands succeed, the local install is ready.
 
 ### Per-model venv smoke tests
 
