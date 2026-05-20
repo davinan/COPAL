@@ -20,7 +20,7 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
-from copal.io.schema import load_ligands_csv
+from copal.io.schema import load_ligands_csv, load_receptors_csv
 from copal.runner.sbatch import make_sbatch_file
 
 
@@ -120,7 +120,7 @@ class Manager(ABC):
         ligand_name_col: str = "lig_name",
     ) -> dict:
         prot_df = (
-            pd.read_csv(protein_csv)
+            load_receptors_csv(protein_csv)     # alias-aware: refahl_id/LuxR_name -> receptor_id, sequence -> seq
             if protein_csv
             else pd.DataFrame(columns=[protein_name_col, "sequence", "msa_path"])
         )
