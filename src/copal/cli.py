@@ -45,6 +45,13 @@ def predict(
                                  help="Write inputs + .cmds file but skip execution."),
     submit: bool = typer.Option(False, "--submit",
                                 help="Auto-submit the sbatch (slurm executor only)."),
+    sbatch_partition: str = typer.Option("gpu", "--sbatch-partition",
+                                         help="SLURM partition for the array job (slurm executor)."),
+    sbatch_gres: str = typer.Option("gpu", "--sbatch-gres",
+                                    help="SLURM --gres value; clusters that require a GPU type "
+                                         "need e.g. 'gpu:a4000:1' (slurm executor)."),
+    sbatch_constraint: str = typer.Option("[A100|H200|L40|A4000|A5000|A6000]", "--sbatch-constraint",
+                                          help="SLURM --constraint for the array job (slurm executor)."),
 ) -> None:
     """Schedule + emit per-model inputs, then dispatch via SLURM or run locally."""
     from copal.pipeline import run_pipeline
@@ -63,6 +70,9 @@ def predict(
         workers=workers,
         dry_run=dry_run,
         submit=submit,
+        sbatch_partition=sbatch_partition,
+        sbatch_gres=sbatch_gres,
+        sbatch_constraint=sbatch_constraint,
     )
 
 

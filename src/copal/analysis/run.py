@@ -149,6 +149,7 @@ def _execute_sim_matrix(cfg: DictConfig) -> None:
              method, ligands_path, out_path)
     df = write_pairwise_matrix(ligands_df, method, out_path)
     log.info("Wrote %s (shape=%s, diagonal=1.0, symmetric)", out_path, df.shape)
+    print(f"Wrote {out_path} ({df.shape[0]}x{df.shape[1]} matrix, method={method})")
 
 
 def run_sim_matrix_with_overrides(overrides: Sequence[str] | None = None) -> None:

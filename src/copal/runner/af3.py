@@ -10,6 +10,19 @@ import numpy as np
 from copal.runner.base import Manager, resolve_script_path
 
 
+def _abs_msa_path(msa_path):
+    """Absolutize an MSA path for the AF3 JSON.
+
+    AF3 resolves ``unpairedMsaPath`` relative to the input JSON's own
+    directory, not the CWD — so a repo-root-relative path (e.g.
+    ``data/benchmark_msas/N.a3m``) would not be found. Pass-through when
+    falsy (no MSA configured).
+    """
+    if not msa_path:
+        return msa_path
+    return str(Path(msa_path).expanduser().resolve())
+
+
 class AF3Manager(Manager):
     MODEL_ID = "af3"
     SCRIPT_ENV_VAR = "COPAL_AF3_SCRIPT"
@@ -81,7 +94,7 @@ class AF3Manager(Manager):
             "protein": {
                 "id": ids,
                 "sequence": prot_info["sequence"],
-                "unpairedMsaPath": prot_info["msa_path"],
+                "unpairedMsaPath": _abs_msa_path(prot_info["msa_path"]),
                 "pairedMsa": "",
                 "templates": [],
             }
@@ -98,7 +111,7 @@ class AF3Manager(Manager):
             "rna": {
                 "id": ids,
                 "sequence": rna_info["sequence"],
-                "unpairedMsaPath": rna_info["msa_path"],
+                "unpairedMsaPath": _abs_msa_path(rna_info["msa_path"]),
                 "pairedMsa": "",
                 "templates": [],
             }

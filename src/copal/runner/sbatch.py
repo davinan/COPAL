@@ -29,8 +29,8 @@ def make_sbatch_file(
         "#!/bin/bash",
         f"#SBATCH --partition={partition}",
         f"#SBATCH --job-name={job_name}",
-        f"#SBATCH --output={cmds_dir/'logs'}/slurm-%X-%a.out",
-        f"#SBATCH --error={cmds_dir/'logs'}/slurm-%X-%a.err",
+        f"#SBATCH --output={cmds_dir/'logs'}/slurm-%A-%a.out",
+        f"#SBATCH --error={cmds_dir/'logs'}/slurm-%A-%a.err",
         f"#SBATCH --time={time}",
     ]
     if "bf" not in partition:
@@ -46,7 +46,9 @@ def make_sbatch_file(
     sbatch.append(f'CMD=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {cmds_file})')
     sbatch.append('echo "${CMD}" | bash')
 
-    cmds_file.write_text("\n".join(cmds))
+    # Trailing newline: the submit helper counts array tasks with `wc -l`,
+    # which counts newlines — without it the last command is dropped.
+    cmds_file.write_text("\n".join(cmds) + "\n")
     sarray_file.write_text("\n".join(sbatch))
 
     submit_helper = cmds_dir / "submit_sarray.sh"
