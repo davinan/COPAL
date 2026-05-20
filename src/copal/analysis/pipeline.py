@@ -115,8 +115,11 @@ def collect_all_from_basepath(
     confs = list(path.glob("confidences/*/*"))
     name_to_confs: dict[str, dict[str, list[Path]]] = {}
     for c in confs:
-        name = c.parent.name.split("_AHL")[0].split("_HEHEAA")[0].upper()
-        lig = c.parent.name.split("_")[-1]
+        # Uppercase before splitting: AF3 lowercases its output dir names
+        # (metha_001a_ahl03), so a case-sensitive split on "_AHL" would miss.
+        dirname = c.parent.name.upper()
+        name = dirname.split("_AHL")[0].split("_HEHEAA")[0]
+        lig = dirname.split("_")[-1]
         name_to_confs.setdefault(name, {}).setdefault(lig, [])
 
         if c.name == "af3" and af3_basepath is not None:
