@@ -63,3 +63,8 @@ docs/superpowers/
 .gitmodules
 
 deprecated/
+
+# Local agent config / scratch
+.claude/
+CLAUDE.md
+runs/
