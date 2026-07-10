@@ -11,6 +11,12 @@ runs each receptor × ligand pair through a configurable subset of
 {AlphaFold 3, Boltz2, RosettaFold3} on a SLURM cluster, and ranks the
 ligands per receptor using an ensemble of confidence-derived scores.
 
+> **Try the RALPH-BLAST inference tool in your browser — no install:**
+> [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/davinan/COPAL/blob/main/applications/RALPH_blastp_inference.ipynb)
+> BLAST a LuxR sequence against the RALPH database (10,496 homologs + 153 RefAHL
+> receptors) and read off per-model + COPAL ligand rankings. See
+> [`applications/RALPH_blastp_inference.ipynb`](applications/RALPH_blastp_inference.ipynb).
+
 ```
                   receptors.csv         ligands.csv
                        │                     │

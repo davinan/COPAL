@@ -30,6 +30,13 @@ Thumbs.db
 .env
 .env.local
 
+# RALPH-BLAST database: materialized by setup_db.sh from the committed .xz
+# sources; regenerable, so not committed. (The .xz + ligands_58.csv ARE committed.)
+baselines/ralph_blast/ralph_database/ralph_scores.csv
+baselines/ralph_blast/ralph_database/ralph_model_scores.csv
+baselines/ralph_blast/ralph_database/ralph_db.faa
+baselines/ralph_blast/ralph_database/ralph.p*
+
 # Reproduction artifacts (downloaded or generated)
 data/predictions.csv
 data/predictions.csv.xz

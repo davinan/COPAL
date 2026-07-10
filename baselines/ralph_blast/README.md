@@ -1,73 +1,76 @@
 # RALPH BLAST baseline
 
-A homology-search baseline: for each query LuxR, BLAST against the RALPH
-reference database and use the cognate-ligand annotations of the top BLAST
-hits to produce a ranked ligand list.
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/davinan/COPAL/blob/main/applications/RALPH_blastp_inference.ipynb)
+
+A homology-search baseline / inference tool: BLAST a query LuxR against the
+RALPH reference database and read off the cognate-ligand rankings of the top
+hits. The interactive entry point is
+[`applications/RALPH_blastp_inference.ipynb`](../../applications/RALPH_blastp_inference.ipynb)
+— click the badge above to run it in Google Colab (a fresh runtime in your own
+Google account), or run it locally.
 
 ## Dependencies
 
 1. **BLAST+** (`blastp`, `makeblastdb`).
-
    - Conda: `conda install -c bioconda blast`
    - Debian/Ubuntu: `sudo apt install ncbi-blast+`
-   - Or download official binaries from
+   - Or the official static binaries from
      <https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/>.
 
-   Verify with `which blastp`.
+   Verify with `which blastp makeblastdb`.
 
-2. **The `ralph` Python package** — ships in-tree under
-   [`src/ralph/`](../../src/ralph/) and is installed by `uv sync` from the
-   repo root. No separate install needed. Provides
-   `ralph.blastp.blastp_query`, `ralph.ranking.aggregate_rankings`, and
-   `ralph.database.load_scores`.
+2. **The `ralph` + `copal` packages** — ship in-tree; `uv sync` (or
+   `pip install -e .`) from the repo root installs them (RDKit + ipywidgets
+   included).
 
-3. **The `copal` package** (this repository) — `uv sync` from the repo root.
+## The database (ships in-repo, compressed)
 
-## Building the RALPH database
-
-The RALPH database is a directory containing:
+`ralph_database/` contains the database as **compressed sources** (git-committed):
 
 ```
 ralph_database/
-├── ralph_scores.csv     # per-LuxR ranked AHL scores (training labels)
-├── ralph.fasta          # reference LuxR sequences
-├── ralph.phr            # ─┐
-├── ralph.pin            #  │ BLAST DB files produced by makeblastdb
-├── ralph.psq            # ─┘
-└── (optional .pdb/.pog/.pos/.pot/.ptf/.pto extras)
+├── ralph_scores.csv.xz        # wide rankings: luxr_name, source, organism,
+│                              #   true_ahl_id, mpKT, sequence, {model}_1..58
+│                              #   (AHL id at each rank) for model in
+│                              #   ensemble/af3/rf3/boltz2/boltz2affinity
+├── ralph_model_scores.csv.xz  # per-pair scores by (luxr_name, ahl):
+│                              #   copal, af3, rf3, boltz2, boltz2affinity
+├── ralph_db.faa.xz            # BLAST FASTA (headers = luxr_name)
+└── ligands_58.csv             # AHLid, abbreviation, smi
 ```
 
-To build it from a source FASTA + scores CSV:
+It covers **10,496 RALPH homologs + 153 RefAHL benchmark receptors** (10,649
+sequences). RefAHL rows carry the experimentally-known cognate (`true_ahl_id`).
+
+### Setup (one command)
 
 ```bash
-mkdir -p baselines/ralph_blast/ralph_database
-cd baselines/ralph_blast/ralph_database
-
-# 1. Place ralph_scores.csv here (per-LuxR annotated AHL scores).
-# 2. Place ralph.fasta here (one record per RALPH LuxR sequence).
-
-makeblastdb \
-    -in ralph.fasta \
-    -dbtype prot \
-    -out ralph
+bash baselines/ralph_blast/setup_db.sh
 ```
 
-Where `ralph_scores.csv` is expected to have at least the columns
-`luxr_name` and per-AHL score columns (consult `ralph.database.load_scores`
-for the exact schema).
+This decompresses the `.xz` sources to plain `.csv`/`.faa` and runs
+`makeblastdb` to build the BLAST index. It is idempotent (safe to re-run) and
+the materialized files are git-ignored. The notebook auto-runs it if the index
+is missing.
 
-> If you don't have a RALPH source FASTA + scores file, contact the COPAL
-> authors — the data accompanying the paper is hosted externally (see the
-> repository root README.md for the DOI).
+### Rebuilding the shipped sources (maintainers only)
 
-## Running
+The compressed sources are produced by `build_ralph_db.py` from the published
+supplementary data (RALPH rankings/scores workbook + RefAHL benchmark rankings +
+`ralph_v3.csv` sequences); those inputs are external to the repo. End users do
+**not** run this — they use the shipped `.xz` + `setup_db.sh`.
 
 ```bash
-cd baselines/ralph_blast
-./run_blast_analysis.sh
+python build_ralph_db.py \
+    --xlsx <Supp_Table6_RALPH_rankings.xlsx> \
+    --ralph-v3 <ralph_v3.csv> \
+    --bench-rankings <benchmark_data_all_rankings.csv> \
+    --bench-ensemble <benchmark_data_all_ensemble_rankings.csv>
 ```
 
-Or directly:
+(run from the repo root; `--ligands` / `--paper-luxrs` default to `data/`.)
+
+## Running the CLI baseline (benchmark)
 
 ```bash
 python run_ralph_blast.py \
@@ -75,16 +78,12 @@ python run_ralph_blast.py \
     --ralph-database ./ralph_database \
     --ligands-path ../../data/curated_ligands_annotated.csv \
     --output-root ./outputs/results \
-    --workflow-dir ./workflow_ralph \
-    --min-pident 30 \
-    --max-hits 50
+    --min-pident 30 --max-hits 50
 ```
 
-Outputs land under `outputs/results/`:
+> **Note.** For a leakage-controlled *benchmark*, point `--ralph-database` at a
+> leakage-filtered, RALPH-only database (see the paper). The shipped
+> `ralph_database/` is the *inference* database: full, unfiltered, and includes
+> the RefAHL receptors so a query can hit either — a different use case.
 
-- `ranking_performance/ranking_performance_conf{1,2,3}.csv`
-- `full_rankings/all_splits.csv`
-- `full_rankings/RALPH.xlsx`
-
-Tune `--min-pident` to control which hits are kept and how the baseline
-behaves on RefAHL splits.
+Outputs land under `outputs/results/` (`ranking_performance/`, `full_rankings/`).
