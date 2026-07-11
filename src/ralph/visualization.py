@@ -1,5 +1,7 @@
 """Visualization functions for ranking results."""
 
+import html
+
 import matplotlib.pyplot as plt
 import pandas as pd
 from IPython.display import HTML, display
@@ -41,13 +43,47 @@ def _ranked_names(hit_row, prefix, top_k):
     return out
 
 
+def _smiles_table(rows, score_label):
+    """Return an HTML table (rank | abbreviation | SMILES | score) for a grid.
+
+    rows: [(rank, abbreviation, smiles, score_str), ...] already in rank order.
+    The SMILES cell is monospaced and shown in full (unlike the baked grid
+    legend, which cannot fit a long acyl-chain SMILES on one line).
+    """
+    th = "style='text-align:left;padding:2px 10px;border-bottom:1px solid #ccc'"
+    header = (
+        "<tr><th style='text-align:right;padding:2px 10px;"
+        "border-bottom:1px solid #ccc'>#</th>"
+        f"<th {th}>Abbrev.</th><th {th}>SMILES</th>"
+        f"<th {th}>{html.escape(str(score_label))}</th></tr>"
+    )
+    body = []
+    for rk, abbr, smi, score_str in rows:
+        body.append(
+            f"<tr><td style='text-align:right;padding:2px 10px'>{rk}</td>"
+            f"<td style='padding:2px 10px'>{html.escape(abbr)}</td>"
+            f"<td style='padding:2px 10px;font-family:monospace'>{html.escape(smi)}</td>"
+            f"<td style='padding:2px 10px'>{html.escape(score_str)}</td></tr>"
+        )
+    return (
+        "<table style='border-collapse:collapse;font-size:13px;margin-top:6px'>"
+        f"{header}{''.join(body)}</table>"
+    )
+
+
 def _render_ligand_grid(ranked, ligand_df, per_hit, score_col, score_label):
-    """Display a rank-ordered RDKit grid; annotate each ligand with its model score.
+    """Display a rank-ordered RDKit grid + a SMILES table, annotated with scores.
 
     ranked:    [(rank, ahl_id), ...]
     per_hit:   DataFrame of this receptor's per-pair scores, indexed by ahl (or None).
+
+    Tiles are labelled by AHL abbreviation (e.g. ``3OC6``), not the internal
+    AHLid; the table below carries the full SMILES so long acyl chains stay
+    legible.
     """
     names = [n for _, n in ranked]
+    # AHLid is the join key linking `ranked` / `per_hit` to ligand rows; it is
+    # kept internal (never shown). Abbreviation + SMILES are what the user sees.
     name_col = next(
         (c for c in ["AHLid", "name", "id", "ligand_id"] if c in ligand_df.columns),
         None,
@@ -55,6 +91,14 @@ def _render_ligand_grid(ranked, ligand_df, per_hit, score_col, score_label):
     if name_col is None:
         display(HTML(f"<p>{', '.join(names)}</p>"))
         return
+    abbr_col = next(
+        (c for c in ["abbreviation", "abbrev", "abbr"] if c in ligand_df.columns),
+        name_col,
+    )
+    smiles_col = next(
+        (c for c in ["smi", "smiles", "SMILES", "canonical_smiles"] if c in ligand_df.columns),
+        None,
+    )
     sub = ligand_df[ligand_df[name_col].isin(names)].copy()
     if "ROMol" not in sub.columns or len(sub) == 0:
         display(HTML(f"<p>{', '.join(names)}</p>"))
@@ -68,19 +112,26 @@ def _render_ligand_grid(ranked, ligand_df, per_hit, score_col, score_label):
     sub["_rank"] = sub[name_col].map(rankmap)
     sub = sub.sort_values("_rank").dropna(subset=["ROMol"])
     legends = []
+    rows = []
     for _, row in sub.iterrows():
-        nm = row[name_col]
         rk = int(row["_rank"])
-        leg = f"#{rk} {nm}"
-        if per_hit is not None and score_col in per_hit.columns and nm in per_hit.index:
-            sc = per_hit.loc[nm, score_col]
+        abbr = str(row[abbr_col])
+        score_str = ""
+        if per_hit is not None and score_col in per_hit.columns and row[name_col] in per_hit.index:
+            sc = per_hit.loc[row[name_col], score_col]
             if pd.notna(sc):
-                leg += f"  {score_label}={float(sc):.3g}"
+                score_str = f"{float(sc):.3g}"
+        leg = f"#{rk} {abbr}"
+        if score_str:
+            leg += f"  {score_label}={score_str}"
         legends.append(leg)
+        smi = str(row[smiles_col]) if smiles_col else ""
+        rows.append((rk, abbr, smi, score_str))
     img = MolsToGridImage(
         list(sub["ROMol"]), molsPerRow=4, subImgSize=(190, 190), legends=legends
     )
     display(img)
+    display(HTML(_smiles_table(rows, score_label)))
 
 
 def interactive_blastp_results(

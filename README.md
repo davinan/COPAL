@@ -184,9 +184,3 @@ The COPAL source code is licensed under the **MIT License** (see
 `third_party/alphafold3-patches/confidence_types.py` is **CC-BY-NC-SA 4.0**
 (see that directory's `LICENSE` and `NOTICE`). External models invoked at
 runtime carry their own licenses — see [`NOTICE`](NOTICE).
-
-## Citation
-
-TBD
-```bibtex
-```
