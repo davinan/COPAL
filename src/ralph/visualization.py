@@ -1,90 +1,16 @@
 """Visualization functions for ranking results."""
 
-import re
-
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from IPython.display import HTML, display
 
 try:
     import ipywidgets as widgets
-    from ipywidgets import HBox, Output, VBox, fixed, interact, interactive
+    from ipywidgets import Output, VBox, interactive
     IPYWIDGETS_AVAILABLE = True
 except ImportError:
     IPYWIDGETS_AVAILABLE = False
     widgets = None
-
-
-def clustered_rank_plot(df_plot: pd.DataFrame, gap=2.0, highlight_labels=(), top_k=10):
-    """Create a clustered bar plot of rankings.
-
-    Args:
-        df_plot: DataFrame with columns:
-            - label: x tick label
-            - cluster: grouping for clusters
-            - best_rank: ranking value (smaller is better)
-        gap: Gap size between clusters
-        highlight_labels: Labels to highlight in red
-        top_k: Number of top ranks to display
-    """
-    df_plot = df_plot.copy()
-
-    max_rank = int(np.nanmax(df_plot["best_rank"]))
-    df_plot["height"] = (max_rank + 1) - df_plot["best_rank"]
-    df_plot["height"] = df_plot["height"].fillna(0)
-
-    # Order within clusters: by length then unsaturation (so it looks tidy)
-    # We extract numeric length + unsat count from the label.
-    def parse_len_unsat(lbl):
-        m = re.search(r"C(\d+)(?::(\d+))?$", lbl)
-        if not m:
-            return (999, 999)
-        L = int(m.group(1))
-        U = int(m.group(2)) if m.group(2) else 0
-        return (L, U)
-
-    df_plot["len"], df_plot["unsat"] = zip(*df_plot["label"].map(parse_len_unsat))
-    df_plot = df_plot.sort_values(["cluster", "len", "unsat", "label"]).reset_index(drop=True)
-
-    # Build x positions with gaps
-    x = 0.0
-    xs = []
-    labels = []
-    colors = []
-    for clust, g in df_plot.groupby("cluster", sort=False):
-        for _, row in g.iterrows():
-            xs.append(x)
-            labels.append(row["label"])
-            colors.append("red" if row["label"] in set(highlight_labels) else "black")
-            x += 1.0
-        x += gap
-
-    df_plot["x"] = xs
-
-    # Plot
-    fig, ax = plt.subplots(figsize=(14, 3))
-    ax.bar(df_plot["x"], df_plot["height"], width=0.85, color=colors)
-
-    # y-axis: show rank numbers even though heights are inverted
-    rank_labels = np.arange(1, max_rank + 1)
-    tick_positions = (max_rank + 1) - rank_labels
-    ax.set_yticks(tick_positions)
-    ax.set_yticklabels(rank_labels)
-    ax.set_ylabel("Best ranking")
-    ax.set_ylim(max_rank - top_k, max_rank)
-
-    # x-axis labels
-    ax.set_xticks(df_plot["x"])
-    ax.set_xticklabels(labels, rotation=90, fontsize=7)
-
-    # styling
-    ax.grid(axis="y", alpha=0.25)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-
-    plt.tight_layout()
-    plt.show()
 
 
 # Ranking blocks shown per hit: COPAL ensemble first, then each individual model.
@@ -166,10 +92,11 @@ def interactive_blastp_results(
 ):
     """Interactive widget to explore BLASTP hits with per-model ligand rankings.
 
-    For the selected hit, shows: the query-vs-hit sequence alignment; the top-K
-    ligands under COPAL (ensemble) and each individual model (AF3, RF3, Boltz2,
-    Boltz2 Affinity), each ligand annotated with that model's score; the hit's
-    mpKT; and, for RefAHL benchmark receptors, the known cognate ligand.
+    For the selected hit, shows: the query-vs-hit sequence alignment; and the
+    top-K ligands for the model chosen in the dropdown (COPAL ensemble by
+    default, or AF3, RF3, Boltz2, Boltz2 Affinity), each ligand annotated with
+    that model's score. The header line carries the hit's mpKT and, for RefAHL
+    benchmark receptors, the known cognate ligand.
 
     Args:
         hits_df: BLASTP results (from blastp_query).
@@ -199,12 +126,18 @@ def interactive_blastp_results(
         value=10, min=1, max=58, step=1,
         description='Top K:', style={'description_width': 'initial'},
     )
+    model_dropdown = widgets.Dropdown(
+        options=[(label, prefix) for prefix, label in _MODEL_DISPLAY],
+        value='ensemble',
+        description='Model:',
+        style={'description_width': 'initial'},
+    )
 
-    def update_display(selected_hit_idx, top_k):
+    def update_display(selected_hit_idx, model, top_k):
         with output:
             output.clear_output(wait=True)
             if selected_hit_idx is None:
-                display(HTML("<p>Select a hit to view alignment, per-model rankings, and scores.</p>"))
+                display(HTML("<p>Select a hit to view its alignment and ligand rankings.</p>"))
                 return
             try:
                 selected_hit = hits_df.iloc[selected_hit_idx]
@@ -255,34 +188,28 @@ def interactive_blastp_results(
                     except KeyError:
                         per_hit = None
 
-                # 2. Per-model ranked ligands.
-                display(HTML(f"<h3>2. Top {top_k} ligands per model</h3>"))
-                for prefix, label in _MODEL_DISPLAY:
-                    ranked = _ranked_names(hit_row, prefix, top_k)
-                    if not ranked:
-                        continue
-                    display(HTML(f"<h4>{label}</h4>"))
-                    if ligand_df is not None:
-                        _render_ligand_grid(
-                            ranked, ligand_df, per_hit,
-                            _SCORE_COL[prefix], _SCORE_LABEL[prefix],
-                        )
-                    else:
-                        display(HTML("<p>" + ", ".join(f"#{r} {n}" for r, n in ranked) + "</p>"))
-
-                # 3. COPAL clustered ranking plot.
-                ens = _ranked_names(hit_row, 'ensemble', top_k)
-                if ens:
-                    display(HTML("<h3>3. COPAL ranking plot</h3>"))
-                    dfp = pd.DataFrame(
-                        [{'label': n, 'cluster': 0, 'best_rank': r} for r, n in ens]
+                # 2. Ranked ligands for the model selected in the dropdown.
+                label = dict(_MODEL_DISPLAY)[model]
+                ranked = _ranked_names(hit_row, model, top_k)
+                display(HTML(f"<h3>2. Top {top_k} ligands — {label}</h3>"))
+                if not ranked:
+                    display(HTML("<p><em>No ranking available for this model.</em></p>"))
+                elif ligand_df is not None:
+                    _render_ligand_grid(
+                        ranked, ligand_df, per_hit,
+                        _SCORE_COL[model], _SCORE_LABEL[model],
                     )
-                    top_label = dfp.sort_values('best_rank').iloc[0]['label']
-                    clustered_rank_plot(dfp, top_k=top_k, gap=2.0, highlight_labels=(top_label,))
+                else:
+                    display(HTML("<p>" + ", ".join(f"#{r} {n}" for r, n in ranked) + "</p>"))
             except Exception as e:
                 display(HTML(f"<p><em>Error processing selected hit: {e}</em></p>"))
 
-    interact_widget = interactive(update_display, selected_hit_idx=hit_dropdown, top_k=top_k_slider)
+    interact_widget = interactive(
+        update_display,
+        selected_hit_idx=hit_dropdown,
+        model=model_dropdown,
+        top_k=top_k_slider,
+    )
     return VBox([interact_widget, output])
 
 

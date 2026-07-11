@@ -12,7 +12,6 @@ from ralph.database import (
 )
 from ralph.ranking import aggregate_rankings
 from ralph.visualization import (
-    clustered_rank_plot,
     interactive_alignment_viewer,
     interactive_blastp_results,
 )
@@ -22,7 +21,6 @@ __all__ = [
     "blastp_query",
     "write_query_fasta",
     "aggregate_rankings",
-    "clustered_rank_plot",
     "interactive_blastp_results",
     "interactive_alignment_viewer",
     "plot_sequence_alignment",
