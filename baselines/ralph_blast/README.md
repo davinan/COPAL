@@ -33,14 +33,18 @@ ralph_database/
 │                              #   true_ahl_id, mpKT, sequence, {model}_1..58
 │                              #   (AHL id at each rank) for model in
 │                              #   ensemble/af3/rf3/boltz2/boltz2affinity
-├── ralph_model_scores.csv.xz  # per-pair scores by (luxr_name, ahl):
-│                              #   copal, af3, rf3, boltz2, boltz2affinity
+├── ralph_model_scores.csv.xz  # per-pair COPAL sum-of-ranks score:
+│                              #   luxr_name, ahl, copal
 ├── ralph_db.faa.xz            # BLAST FASTA (headers = luxr_name)
 └── ligands_58.csv             # AHLid, abbreviation, smi
 ```
 
 It covers **10,496 RALPH homologs + 153 RefAHL benchmark receptors** (10,649
 sequences). RefAHL rows carry the experimentally-known cognate (`true_ahl_id`).
+
+The score file contains only the COPAL sum-of-ranks score.
+Individual-model ligand rankings remain in `ralph_scores.csv.xz`.
+The notebook displays a numeric score for COPAL and rank order for individual models.
 
 ### Setup (one command)
 

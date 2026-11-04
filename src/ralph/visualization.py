@@ -25,10 +25,8 @@ _MODEL_DISPLAY = [
     ("boltz2", "Boltz2"),
     ("boltz2affinity", "Boltz2 Affinity"),
 ]
-_SCORE_COL = {"ensemble": "copal", "af3": "af3", "rf3": "rf3",
-              "boltz2": "boltz2", "boltz2affinity": "boltz2affinity"}
-_SCORE_LABEL = {"ensemble": "sum-rank", "af3": "ipTM", "rf3": "ipTM",
-                "boltz2": "ipTM", "boltz2affinity": "affinity"}
+_SCORE_COL = {"ensemble": "copal"}
+_SCORE_LABEL = {"ensemble": "sum-rank"}
 
 
 def _ranked_names(hit_row, prefix, top_k):
@@ -55,7 +53,8 @@ def _smiles_table(rows, score_label):
         "<tr><th style='text-align:right;padding:2px 10px;"
         "border-bottom:1px solid #ccc'>#</th>"
         f"<th {th}>Abbrev.</th><th {th}>SMILES</th>"
-        f"<th {th}>{html.escape(str(score_label))}</th></tr>"
+        + (f"<th {th}>{html.escape(str(score_label))}</th>" if score_label else "")
+        + "</tr>"
     )
     body = []
     for rk, abbr, smi, score_str in rows:
@@ -63,7 +62,8 @@ def _smiles_table(rows, score_label):
             f"<tr><td style='text-align:right;padding:2px 10px'>{rk}</td>"
             f"<td style='padding:2px 10px'>{html.escape(abbr)}</td>"
             f"<td style='padding:2px 10px;font-family:monospace'>{html.escape(smi)}</td>"
-            f"<td style='padding:2px 10px'>{html.escape(score_str)}</td></tr>"
+            + (f"<td style='padding:2px 10px'>{html.escape(score_str)}</td>" if score_label else "")
+            + "</tr>"
         )
     return (
         "<table style='border-collapse:collapse;font-size:13px;margin-top:6px'>"
@@ -72,7 +72,7 @@ def _smiles_table(rows, score_label):
 
 
 def _render_ligand_grid(ranked, ligand_df, per_hit, score_col, score_label):
-    """Display a rank-ordered RDKit grid + a SMILES table, annotated with scores.
+    """Display a rank-ordered RDKit grid and SMILES table, with optional COPAL scores.
 
     ranked:    [(rank, ahl_id), ...]
     per_hit:   DataFrame of this receptor's per-pair scores, indexed by ahl (or None).
@@ -82,6 +82,8 @@ def _render_ligand_grid(ranked, ligand_df, per_hit, score_col, score_label):
     legible.
     """
     names = [n for _, n in ranked]
+    if per_hit is None or score_col not in per_hit.columns:
+        score_label = None
     # AHLid is the join key linking `ranked` / `per_hit` to ligand rows; it is
     # kept internal (never shown). Abbreviation + SMILES are what the user sees.
     name_col = next(
@@ -146,7 +148,8 @@ def interactive_blastp_results(
     For the selected hit, shows: the query-vs-hit sequence alignment; and the
     top-K ligands for the model chosen in the dropdown (COPAL ensemble by
     default, or AF3, RF3, Boltz2, Boltz2 Affinity), each ligand annotated with
-    that model's score. The header line carries the hit's mpKT and, for RefAHL
+    the COPAL sum-of-ranks score for the ensemble view. Individual models show
+    rank order without numeric scores. The header carries mpKT and, for RefAHL
     benchmark receptors, the known cognate ligand.
 
     Args:
@@ -248,7 +251,7 @@ def interactive_blastp_results(
                 elif ligand_df is not None:
                     _render_ligand_grid(
                         ranked, ligand_df, per_hit,
-                        _SCORE_COL[model], _SCORE_LABEL[model],
+                        _SCORE_COL.get(model), _SCORE_LABEL.get(model),
                     )
                 else:
                     display(HTML("<p>" + ", ".join(f"#{r} {n}" for r, n in ranked) + "</p>"))

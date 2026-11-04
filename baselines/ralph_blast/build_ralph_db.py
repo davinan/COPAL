@@ -18,8 +18,8 @@ Emits into ralph_database/ (git-committed, compressed):
   ralph_scores.csv.xz         -- wide: luxr_name, source, organism, sequence,
       true_ahl_id, mpKT, {model}_1..58 (AHL ids) for model in
       ensemble/af3/rf3/boltz2/boltz2affinity. RALPH + RefAHL rows.
-  ralph_model_scores.csv.xz   -- long-ish per-pair scores, indexed by
-      (luxr_name, ahl): af3, rf3, boltz2, boltz2affinity, copal.
+  ralph_model_scores.csv.xz   -- per-pair COPAL scores:
+      luxr_name, ahl, copal (ensemble sum-of-ranks).
   ralph_db.faa.xz             -- BLAST FASTA, headers = luxr_name (RALPH id /
       RefAHL id), so blastp sseqid matches the scores key.
   ligands_58.csv              -- AHLid, abbreviation, smi.
@@ -260,16 +260,13 @@ def main() -> None:
         frames_long.append(f_long)
 
     wide = pd.concat(frames_wide, ignore_index=True)
-    long = pd.concat(frames_long, ignore_index=True)
+    long = pd.concat(frames_long, ignore_index=True)[["luxr_name", "ahl", "copal"]]
 
     # global uniqueness + clean FASTA ids
     assert wide["luxr_name"].is_unique, "duplicate luxr_name in combined wide"
     assert not wide["luxr_name"].astype(str).str.contains(r"\s").any(), "whitespace in id"
 
-    # round display scores (4 dp); copal ensemble sum-score kept as-is where integer
-    for c in ["af3", "rf3", "boltz2", "boltz2affinity", "copal"]:
-        if c in long.columns:
-            long[c] = pd.to_numeric(long[c], errors="coerce").round(4)
+    long["copal"] = pd.to_numeric(long["copal"], errors="raise")
 
     # column order for wide
     front = ["luxr_name", "source", "organism", "true_ahl_id", "mpKT", "sequence"]

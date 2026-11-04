@@ -177,6 +177,26 @@ The `copal` CLI has six subcommands: `predict` (schedule + run inference),
 ligand-similarity matrices), and `seqid-filter` (sequence-identity leakage
 filter). Run `copal --help` or see [`USAGE.md`](USAGE.md).
 
+## Citation
+
+If you use COPAL or RALPH, please cite:
+
+An DN, Schaefer AL, Chang S-M, Bai B, Mulligan CI, Oda Y, Greenberg EP, DiMaio F.
+**COPAL: An ensemble of protein-ligand co-folding models enriches preferred ligand predictions for the LuxR-family of quorum sensing receptors.**
+bioRxiv (2026). [Read the preprint](https://www.biorxiv.org/content/10.64898/2026.09.04.749498v1).
+DOI: [10.64898/2026.09.04.749498](https://doi.org/10.64898/2026.09.04.749498).
+
+```bibtex
+@article{an2026copal,
+  title = {COPAL: An ensemble of protein-ligand co-folding models enriches preferred ligand predictions for the LuxR-family of quorum sensing receptors},
+  author = {An, Davi Nakajima and Schaefer, Amy L. and Chang, Szu-Min and Bai, Bianxia and Mulligan, Charlotte I. and Oda, Yasuhiro and Greenberg, E. Peter and DiMaio, Frank},
+  journal = {bioRxiv},
+  year = {2026},
+  doi = {10.64898/2026.09.04.749498},
+  url = {https://www.biorxiv.org/content/10.64898/2026.09.04.749498v1}
+}
+```
+
 ## License
 
 The COPAL source code is licensed under the **MIT License** (see

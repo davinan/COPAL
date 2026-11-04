@@ -75,17 +75,17 @@ def load_scores(database_path: str = "ralph_database") -> pd.DataFrame:
 
 
 def load_model_scores(database_path: str = "ralph_database") -> pd.DataFrame:
-    """Load per-pair model scores, indexed by ``(luxr_name, ahl)`` for O(1) lookup.
+    """Load per-pair COPAL scores, indexed by ``(luxr_name, ahl)`` for O(1) lookup.
 
-    Columns: ``copal`` (ensemble sum-of-ranks), ``af3``/``rf3``/``boltz2`` (ipTM),
-    ``boltz2affinity`` (affinity score). Used to annotate the ranked ligand lists
-    with each model's score. Returns an empty frame gracefully if absent.
+    The only score column is ``copal`` (ensemble sum-of-ranks).
+    Ignore individual-model metrics in older materialized files.
+    Return an empty frame gracefully if the score file is absent.
     """
     try:
         path = _resolve(database_path, "ralph_model_scores", "csv")
     except FileNotFoundError:
         return pd.DataFrame()
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, usecols=["luxr_name", "ahl", "copal"])
     return df.set_index(["luxr_name", "ahl"]).sort_index()
 
 
