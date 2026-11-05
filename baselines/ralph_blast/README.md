@@ -46,6 +46,23 @@ The score file contains only the COPAL sum-of-ranks score.
 Individual-model ligand rankings remain in `ralph_scores.csv.xz`.
 The notebook displays a numeric score for COPAL and rank order for individual models.
 
+### Query-specific RALPH-BLAST ranking
+
+Select **RALPH-BLAST (query)** in the notebook's **Model** dropdown.
+This view predicts a ligand ranking for the query by combining the retrieved hits' COPAL rankings.
+The other dropdown options show the selected hit's precomputed rankings.
+
+The notebook and benchmark CLI share `ralph.ranking.aggregate_blast_hits`.
+BLAST retrieves at most 50 hits by default, using E-value ≤ 1e-5.
+The calculation then retains hits with sequence identity ≥30% and <100%.
+For each ligand, the score is the sum of `1 / COPAL rank` over retained hits.
+Each hit has equal weight; BLAST score, sequence identity, and mpKT do not weight the sum.
+The existing `aggregate_rankings` function determines rank order and tie handling.
+The **Top K** slider controls how many query ligands are displayed.
+
+The averaging scheme matches the benchmark.
+The inference database includes RALPH and RefAHL receptors and is not the benchmark's leakage-filtered database.
+
 ### Setup (one command)
 
 ```bash

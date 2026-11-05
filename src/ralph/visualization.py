@@ -142,6 +142,7 @@ def interactive_blastp_results(
     query_sequence: str = None,
     ligand_df: pd.DataFrame = None,
     model_scores_df: pd.DataFrame = None,
+    query_ranking: pd.DataFrame = None,
 ):
     """Interactive widget to explore BLASTP hits with per-model ligand rankings.
 
@@ -159,6 +160,7 @@ def interactive_blastp_results(
         ligand_df: ligands with a 'ROMol' column (from load_ligands).
         model_scores_df: per-pair scores indexed by (luxr_name, ahl)
             (from load_model_scores); optional, used to annotate scores.
+        query_ranking: query-specific RALPH-BLAST result from aggregate_blast_hits.
     """
     if not IPYWIDGETS_AVAILABLE:
         print("ipywidgets not available. Please install with: pip install ipywidgets")
@@ -181,15 +183,39 @@ def interactive_blastp_results(
         description='Top K:', style={'description_width': 'initial'},
     )
     model_dropdown = widgets.Dropdown(
-        options=[(label, prefix) for prefix, label in _MODEL_DISPLAY],
+        options=[(label, prefix) for prefix, label in _MODEL_DISPLAY]
+        + [("RALPH-BLAST (query)", "ralph_blast")],
         value='ensemble',
         description='Model:',
         style={'description_width': 'initial'},
     )
 
     def update_display(selected_hit_idx, model, top_k):
+        hit_dropdown.disabled = model == "ralph_blast"
         with output:
             output.clear_output(wait=True)
+            if model == "ralph_blast":
+                display(HTML("<h2>RALPH-BLAST ligand ranking for the query</h2>"))
+                if query_ranking is None or query_ranking.empty:
+                    display(HTML(
+                        "<p>No query ranking is available. No BLAST hits with saved "
+                        "rankings met the sequence-identity filter.</p>"
+                    ))
+                    return
+                display(HTML(
+                    "<p>Each retained hit contributes the reciprocal of its COPAL "
+                    "ligand rank. Higher total scores rank first.</p>"
+                ))
+                selected = query_ranking.sort_values("ranking").head(top_k)
+                ranked = list(zip(selected["ranking"].astype(int), selected["name"], strict=True))
+                if ligand_df is not None:
+                    per_query = query_ranking.set_index("name")
+                    _render_ligand_grid(
+                        ranked, ligand_df, per_query, "score", "RALPH-BLAST score"
+                    )
+                else:
+                    display(HTML(selected[["ranking", "name", "score"]].to_html(index=False)))
+                return
             if selected_hit_idx is None:
                 display(HTML("<p>Select a hit to view its alignment and ligand rankings.</p>"))
                 return

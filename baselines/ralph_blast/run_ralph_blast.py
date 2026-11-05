@@ -13,13 +13,13 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 # RALPH package — see baselines/ralph_blast/README.md for install instructions.
 from ralph.blastp import blastp_query
-from ralph.ranking import aggregate_rankings
 from ralph.database import load_scores
+from ralph.ranking import aggregate_blast_hits
 
 
 def _normalize_luxr(refahl_id: str) -> str:
@@ -40,18 +40,9 @@ def run_blast_and_aggregate(
     Returns aggregated DataFrame (name, ranking, ...) or None if no hits in range.
     """
     hits = blastp_query(query_seq=seq, db_path=db_path, max_hits=max_hits)
-    if hits.empty:
-        return None
-    hits = hits.sort_values("bitscore", ascending=False)
-    print(hits['pident'].describe())
-    hits = hits[(hits["pident"] >= min_pident) & (hits["pident"] < max_pident)]
-    if hits.empty:
-        return None
-    hit_ids = hits["sseqid"].tolist()
-    score_rows = scores_df[scores_df["luxr_name"].isin(hit_ids)]
-    if score_rows.empty:
-        return None
-    return aggregate_rankings(score_rows)
+    if not hits.empty:
+        print(hits['pident'].describe())
+    return aggregate_blast_hits(hits, scores_df, min_pident, max_pident)
 
 EXCLUDE_SUFFIXES = ("LONG", "SHORT", "MED")
 

@@ -1,8 +1,34 @@
 """Ranking aggregation functions for consensus ligand prediction."""
 
-import pandas as pd
-import numpy as np
 from typing import Optional
+
+import numpy as np
+import pandas as pd
+
+
+def aggregate_blast_hits(
+    hits: pd.DataFrame,
+    scores_df: pd.DataFrame,
+    min_pident: float = 30.0,
+    max_pident: float = 100.0,
+) -> pd.DataFrame | None:
+    """Apply the RALPH-BLAST benchmark's hit filter and aggregation.
+
+    BLAST's hit limit is applied during retrieval, before this identity filter.
+    Each receptor contributes once in scores_df order, as in the benchmark.
+    The benchmark calls aggregate_rankings with its unchanged defaults:
+    unweighted sum of reciprocal COPAL ligand ranks (k=0, power=1).
+    """
+    if hits.empty:
+        return None
+    hits = hits.sort_values("bitscore", ascending=False)
+    hits = hits[(hits["pident"] >= min_pident) & (hits["pident"] < max_pident)]
+    if hits.empty:
+        return None
+    score_rows = scores_df[scores_df["luxr_name"].isin(hits["sseqid"])]
+    if score_rows.empty:
+        return None
+    return aggregate_rankings(score_rows)
 
 
 def aggregate_rankings(

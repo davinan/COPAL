@@ -10,7 +10,7 @@ from ralph.database import (
     load_ralph_database,
     load_scores,
 )
-from ralph.ranking import aggregate_rankings
+from ralph.ranking import aggregate_blast_hits, aggregate_rankings
 from ralph.visualization import (
     interactive_alignment_viewer,
     interactive_blastp_results,
@@ -21,6 +21,7 @@ __all__ = [
     "blastp_query",
     "write_query_fasta",
     "aggregate_rankings",
+    "aggregate_blast_hits",
     "interactive_blastp_results",
     "interactive_alignment_viewer",
     "plot_sequence_alignment",
